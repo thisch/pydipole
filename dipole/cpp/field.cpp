@@ -1,0 +1,338 @@
+#include <vector>
+#include <complex>
+#include <iostream>
+#include "boost/multi_array.hpp"
+#include <omp.h>
+
+
+#include "field.hpp"
+
+using namespace std;
+
+typedef boost::multi_array<complex<double>, 3> restype;
+
+
+restype dipole_field_ff(boost::multi_array<double, 3>& r,
+                        boost::multi_array<double, 2>& p,
+                        boost::multi_array<double, 2>& R,
+                        std::vector<double>& phases, //1d
+                        double k, double t)
+{
+    // computes the vectorial E field of a set of oscillating dipoles in the
+    // far field
+
+    // Parameters
+    // ----------
+    // r: real NxMx3 matrix
+    // p: real Lx3 matrix
+    // R: real Lx3 matrix
+    // phases: real length L vector
+    // k: real
+    //    wavevector(scalar)
+    // t: real
+    //    time
+    // res: NxMx3 complex array
+    //    E-Field
+
+    int N = r.shape()[0];
+    int M = r.shape()[1];
+    int ndip = p.shape()[0]; // number of dipoles
+
+    double c = 299792458.;
+    double mu0 = 4*M_PI*1e-7;
+    double eps0 = 1./(mu0*c*c);
+
+    restype res(boost::extents[r.shape()[0]][r.shape()[1]][3]);
+
+    // cout << "omp_get_max_threads() " << omp_get_max_threads() << endl;
+    // cout << "omp_get_num_threads() " << omp_get_num_threads() << endl;
+
+    #pragma omp parallel for //shared(res, r, R, p)
+    for (int i=0; i < N; i++) {
+        // cout << "omp_get_num_threads() " << omp_get_num_threads() << " "
+             // << omp_get_thread_num()<< endl;
+
+        for (int j=0; j < M; j++) {
+            // cout << "i " << i << " j " << j << endl;
+            for (int l=0; l < 3; l++) {
+                res[i][j][l] = 0.;
+            }
+            // cout << (r[i][j] - R[0]) << endl;
+            for (int d=0; d < ndip; ++d) {
+                double magrprime = 0.;
+                vector<double> rprime_vec(3);
+                vector<double> p_vec(3);
+
+                for (int g=0; g < 3; ++g) {
+                    double rprime = r[i][j][g] - R[d][g];
+                    rprime_vec[g] = rprime;
+                    p_vec[g] = p[d][g];
+                    magrprime += rprime*rprime;
+                }
+                magrprime = sqrt(magrprime);
+                const double krp = k*magrprime;
+                // todo long double?
+                auto expfac = exp(complex<double>(0, k*c*t - krp + phases[d]))/(
+                    4*M_PI*eps0);
+                auto efac = k*k/(magrprime*magrprime*magrprime);
+
+                vector<double> rprime_cross_p(3);
+                vector<double> rpcp(3);
+
+                // r' x p  (note r' is not a unit vector)
+                rprime_cross_p[0] = rprime_vec[1]*p_vec[2] - rprime_vec[2]*p_vec[1];
+                rprime_cross_p[1] = -rprime_vec[0]*p_vec[2] + rprime_vec[2]*p_vec[0];
+                rprime_cross_p[2] = rprime_vec[0]*p_vec[1] - rprime_vec[1]*p_vec[0];
+
+                // (r' x p) x r'  (note r' is not a unit vector)
+                rpcp[0] = rprime_cross_p[1]*rprime_vec[2] - rprime_cross_p[2]*rprime_vec[1];
+                rpcp[1] = -rprime_cross_p[0]*rprime_vec[2] + rprime_cross_p[2]*rprime_vec[0];
+                rpcp[2] = rprime_cross_p[0]*rprime_vec[1] - rprime_cross_p[1]*rprime_vec[0];
+
+                for (int l=0; l < 3; l++) {
+                    res[i][j][l] += efac * expfac * rpcp[l];
+                }
+            }
+        }
+    }
+    return res;
+}
+
+restype dipole_field_general(boost::multi_array<double, 3>& r,
+                            boost::multi_array<double, 2>& p,
+                            boost::multi_array<double, 2>& R,
+                            std::vector<double>& phases, //1d
+                            double k, double t, bool calc_H)
+{
+    // computes the vectorial E or H  field of a set of oscillating dipoles
+
+    // Parameters
+    // ----------
+    // r: real NxMx3 matrix
+    // p: real Lx3 matrix
+    // R: real Lx3 matrix
+    // phases: real length L vector
+    // k: real
+    //    wavevector(scalar)
+    // t: real
+    //    time
+    // res: NxMx3 complex array
+    //    E or H-Field
+
+    int N = r.shape()[0];
+    int M = r.shape()[1];
+    int ndip = p.shape()[0]; // number of dipoles
+
+    double c = 299792458.;
+    double mu0 = 4*M_PI*1e-7;
+    double eps0 = 1./(mu0*c*c);
+
+    double prefac = calc_H ? k*k*c/(4*M_PI) : 1./(4*M_PI*eps0);
+
+    restype res(boost::extents[r.shape()[0]][r.shape()[1]][3]);
+
+    // cout << "omp_get_max_threads() " << omp_get_max_threads() << endl;
+    // cout << "omp_get_num_threads() " << omp_get_num_threads() << endl;
+
+    #pragma omp parallel for //shared(res, r, R, p)
+    for (int i=0; i < N; i++) {
+        // cout << "omp_get_num_threads() " << omp_get_num_threads() << " "
+             // << omp_get_thread_num()<< endl;
+
+        for (int j=0; j < M; j++) {
+            // cout << "i " << i << " j " << j << endl;
+            for (int l=0; l < 3; l++) {
+                res[i][j][l] = 0.;
+            }
+
+            if (calc_H) {
+                // H FIELD
+                for (int d=0; d < ndip; ++d) {
+                    double magrprime = 0.;
+                    vector<double> rprime_vec(3);
+                    vector<double> p_vec(3);
+
+                    for (int g=0; g < 3; ++g) {
+                        double rprime = r[i][j][g] - R[d][g];
+                        rprime_vec[g] = rprime;
+                        p_vec[g] = p[d][g];
+                        magrprime += rprime*rprime;
+                    }
+                    magrprime = sqrt(magrprime);
+                    const double krp = k*magrprime;
+                    // todo long double?
+                    auto expfac = exp(complex<double>(0, k*c*t - krp + phases[d]));
+
+                    vector<double> rprime_cross_p(3);
+                    // r' x p
+                    rprime_cross_p[0] = rprime_vec[1]*p_vec[2] - rprime_vec[2]*p_vec[1];
+                    rprime_cross_p[1] = -rprime_vec[0]*p_vec[2] + rprime_vec[2]*p_vec[0];
+                    rprime_cross_p[2] = rprime_vec[0]*p_vec[1] - rprime_vec[1]*p_vec[0];
+
+                    for (int l=0; l < 3; l++) {
+                        res[i][j][l] += prefac * expfac * (1. - 1./complex<double>(0, krp)) * rprime_cross_p[l];
+                    }
+                }
+            }
+            else {
+                // E FIELD
+                for (int d=0; d < ndip; ++d) {
+                    double magrprime = 0.;
+                    vector<double> rprime_vec(3);
+                    vector<double> p_vec(3);
+
+                    for (int g=0; g < 3; ++g) {
+                        double rprime = r[i][j][g] - R[d][g];
+                        rprime_vec[g] = rprime;
+                        p_vec[g] = p[d][g];
+                        magrprime += rprime*rprime;
+                    }
+                    magrprime = sqrt(magrprime);
+                    const double krp = k*magrprime;
+                    // todo long double?
+                    auto expfac = exp(complex<double>(0, k*c*t - krp + phases[d]));
+
+                    auto e1fac = k*k/(magrprime*magrprime*magrprime);
+                    auto e2fac = complex<double>(1, -krp)/(magrprime*magrprime*magrprime);
+
+                    vector<double> rprime_cross_p(3);
+                    vector<double> rpcp(3);
+                    vector<double> rrpp(3);
+
+                    // r' x p   (note that r' is not a unit vector)
+                    rprime_cross_p[0] = rprime_vec[1]*p_vec[2] - rprime_vec[2]*p_vec[1];
+                    rprime_cross_p[1] = -rprime_vec[0]*p_vec[2] + rprime_vec[2]*p_vec[0];
+                    rprime_cross_p[2] = rprime_vec[0]*p_vec[1] - rprime_vec[1]*p_vec[0];
+
+                    // (r' x p) x r'  (note that r' is not a unit vector)
+                    rpcp[0] = rprime_cross_p[1]*rprime_vec[2] - rprime_cross_p[2]*rprime_vec[1];
+                    rpcp[1] = -rprime_cross_p[0]*rprime_vec[2] + rprime_cross_p[2]*rprime_vec[0];
+                    rpcp[2] = rprime_cross_p[0]*rprime_vec[1] - rprime_cross_p[1]*rprime_vec[0];
+
+                    // r' . p
+                    double rpinp = 0;
+                    for (int g=0; g < 3; ++g) {
+                        rpinp += p_vec[g]*rprime_vec[g];
+                    }
+
+                    // 3*rhat' (rhat' . p) - p
+                    for (int g=0; g < 3; ++g) {
+                        rrpp[g] = 3*rprime_vec[g]*rpinp/(magrprime*magrprime) - p_vec[g];
+                    }
+
+                    for (int l=0; l < 3; l++) {
+                        res[i][j][l] += prefac * expfac * (e1fac * rpcp[l] + e2fac*rrpp[l]);
+                    }
+                }
+            }
+        }
+    }
+    return res;
+}
+
+
+vector<vector<vector<complex<double>>>>
+farfield_dipole_wrapper(vector<vector<vector<double>>> r,
+                        vector<vector<double>> P,
+                        vector<vector<double>> R,
+                        vector<double> phases,
+                        double k, double t) {
+    size_t N1 = r.size();
+    size_t N2 = r[0].size();
+    size_t N3 = r[0][0].size();
+
+    auto r_ma = boost::multi_array<double, 3>(boost::extents[N1][N2][N3]);
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            for (size_t k=0; k<N3; ++k)
+                r_ma[i][j][k] = r[i][j][k];
+
+    N1 = P.size();
+    N2 = P[0].size();
+    auto P_ma = boost::multi_array<double, 2>(boost::extents[N1][N2]);
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            P_ma[i][j] = P[i][j];
+
+    // TODO assert same shape of R and P
+    N1 = R.size();
+    N2 = R[0].size();
+    auto R_ma = boost::multi_array<double, 2>(boost::extents[N1][N2]);
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            R_ma[i][j] = R[i][j];
+
+    // main
+    restype myres = dipole_field_ff(r_ma, P_ma, R_ma, phases, k, t);
+
+    N1 = myres.shape()[0];
+    N2 = myres.shape()[1];
+    N3 = myres.shape()[2];
+    auto myres_vec = vector<vector<vector<complex<double>>>>(
+        N1, vector<vector<complex<double>>>(N2, vector<complex<double>>(N3)));
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            for (size_t k=0; k<N3; ++k)
+                myres_vec[i][j][k] = myres[i][j][k];
+    return myres_vec;
+}
+
+
+vector<vector<vector<complex<double>>>>
+general_dipole_wrapper(vector<vector<vector<double>>> r,
+                       vector<vector<double>> P,
+                       vector<vector<double>> R,
+                       vector<double> phases,
+                       double k, double t, bool calc_H) {
+    size_t N1 = r.size();
+    size_t N2 = r[0].size();
+    size_t N3 = r[0][0].size();
+
+    auto r_ma = boost::multi_array<double, 3>(boost::extents[N1][N2][N3]);
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            for (size_t k=0; k<N3; ++k)
+                r_ma[i][j][k] = r[i][j][k];
+
+    N1 = P.size();
+    N2 = P[0].size();
+    auto P_ma = boost::multi_array<double, 2>(boost::extents[N1][N2]);
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            P_ma[i][j] = P[i][j];
+
+    // TODO assert same shape of R and P
+    N1 = R.size();
+    N2 = R[0].size();
+    auto R_ma = boost::multi_array<double, 2>(boost::extents[N1][N2]);
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            R_ma[i][j] = R[i][j];
+
+    // main
+    restype myres = dipole_field_general(r_ma, P_ma, R_ma, phases, k, t, calc_H);
+
+    N1 = myres.shape()[0];
+    N2 = myres.shape()[1];
+    N3 = myres.shape()[2];
+    auto myres_vec = vector<vector<vector<complex<double>>>>(
+        N1, vector<vector<complex<double>>>(N2, vector<complex<double>>(N3)));
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            for (size_t k=0; k<N3; ++k)
+                myres_vec[i][j][k] = myres[i][j][k];
+    return myres_vec;
+}
+
+
+// int main() {
+//     boost::multi_array<double, 3> r(boost::extents[250][250][3]);
+//     boost::multi_array<double, 2> P(boost::extents[200][3]);
+//     boost::multi_array<double, 2> R(boost::extents[200][3]);
+//     vector<double> phases(200);
+//     double k = 0.08;
+//     double t = 0.;
+//     double releps = 1.;
+//     restype myres = dipole_field_ff(r, P, R, phases, k, t, releps);
+//     return 0;
+// }

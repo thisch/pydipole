@@ -1,0 +1,10 @@
+*.pyc
+*~
+*.png
+*.mp4
+*.so
+*.html
+*.c
+/build/
+/dipole/field.cpp
+/.cache/
