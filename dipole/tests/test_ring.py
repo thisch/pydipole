@@ -171,6 +171,7 @@ class TestRing(Base, FFTMixin):
         ax.set_aspect('equal')
         ax.set_xlim(-thetamax, thetamax)
         ax.set_ylim(-thetamax, thetamax)
+        self.save_fig('fft_pcolor', fig)
 
         # TODO splining of datapoints
         fig, ax = plt.subplots()
@@ -184,9 +185,11 @@ class TestRing(Base, FFTMixin):
         # dipolecode
         self._rolf(sphere=False, shift=False, spp=False, rringfac=rringfac,
                    thetamax=thetamax, horizontal_line=True, show=False, ax=ax, ngrid=1024)
+        self.save_fig('fft_line', fig)
 
         self._rolf(sphere=True, shift=False, spp=False, rringfac=rringfac,
                    thetamax=thetamax, show=False)
+
         self.show()
 
     def test_theta_phi_grid(self):

@@ -80,7 +80,7 @@ class Base:
         if not pytest.config.getvalue('log'):
             self.log.debug("do not save png %s (--log not set)", dest)
             return
-        self.log.debug("saving png %s", dest)
+        self.log.debug("saving mpl figure to '%s'", dest)
         if not os.path.exists(os.path.dirname(dest)):
             os.makedirs(os.path.dirname(dest))
         fig.savefig(dest)
