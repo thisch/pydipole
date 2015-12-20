@@ -111,10 +111,10 @@ class TestRing(Base, FFTMixin):
                 Smag = np.linalg.norm(Smean, axis=2)
                 ax = self._plot_poynting(
                     T, P, Smag, ax=ax,
-                    title='poynting vec. on sphere. opening angle %g deg' % (
+                    title='poynting vec. on sphere. opening angle $%g^\circ$' % (
                         2*thetamax))
-                ax.set_xlabel(r'$\theta_x$', fontsize=15)
-                ax.set_ylabel(r'$\theta_y$', fontsize=15)
+                ax.set_xlabel(r'$\theta_x[^\circ]$', fontsize=15)
+                ax.set_ylabel(r'$\theta_y[^\circ]$', fontsize=15)
                 # ax = self._plot_poynting(T, P, Smean[:, :, 2], title='poynting on sphere')
                 # ax = self._plot_poynting(T, P, res[:, :, 0].real, title='poynting on sphere')
         else:
@@ -130,6 +130,7 @@ class TestRing(Base, FFTMixin):
         if not general:
             ax.set_title('evaluation on sphere: %s, opening angle %g deg' % (
                 sphere, 2*thetamax))
+        self.save_fig('dummy', ax.figure)
         if show:
             self.show()
 

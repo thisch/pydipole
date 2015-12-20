@@ -23,3 +23,5 @@ setup_logger()
 
 def pytest_addoption(parser):
     parser.addoption("--interactive", action="store_true")
+    parser.addoption("--log", action="store_true")
+    parser.addoption("--logdir", default='log')
