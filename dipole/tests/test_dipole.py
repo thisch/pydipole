@@ -145,6 +145,31 @@ class TestAnalytic(Base):
         ax.set_xlabel('x')
         ax.set_ylabel('y')
 
+        # def _blit_draw(self, artists, bg_cache):
+        #     # Handles blitted drawing, which renders only the artists given instead
+        #     # of the entire figure.
+        #     updated_ax = []
+        #     for a in artists:
+        #         # If we haven't cached the background for this axes object, do
+        #         # so now. This might not always be reliable, but it's an attempt
+        #         # to automate the process.
+        #         if a.axes not in bg_cache:
+        #             # bg_cache[a.axes] = a.figure.canvas.copy_from_bbox(a.axes.bbox)
+        #             # change here
+        #             bg_cache[a.axes] = a.figure.canvas.copy_from_bbox(a.axes.figure.bbox)
+        #         a.axes.draw_artist(a)
+        #         updated_ax.append(a.axes)
+
+        #     # After rendering all the needed artists, blit each axes individually.
+        #     for ax in set(updated_ax):
+        #         # and here
+        #         # ax.figure.canvas.blit(ax.bbox)
+        #         ax.figure.canvas.blit(ax.figure.bbox)
+
+        from matplotlib import animation
+        # MONKEY PATCH!!
+        # animation.Animation._blit_draw = _blit_draw
+
         levels = np.linspace(0, 8e17, 25)
         # levels = np.linspace(0, 8e20, 25)
         # levels = None
@@ -162,11 +187,41 @@ class TestAnalytic(Base):
             ax.set_title('t = %g' % (ts[i]/Tper))
             return qvs
 
+        ims = []
+        for t in ts:
+            z = 0.5*np.cross(Eres,
+                             Hres.conjugate() + Hres*np.exp(2j*k*co.c*t)).real
+            z = np.linalg.norm(z, axis=2)
+            # print('z.max(): %g' % z.max())
+            qvs = ax.contourf(X, Y, z, levels=levels, extend='both')
+            qvs.cmap.set_over(qvs.cmap.colors[-1])
+            # FIX QuadContourSet does not implement the Artist interface
+            import types
+
+            def setvisible(self, vis):
+                for c in self.collections:
+                    c.set_visible(vis)
+
+            qvs.set_visible = types.MethodType(setvisible, qvs)
+
+            def setanimated(self, an):
+                for c in self.collections:
+                    c.set_animated(an)
+
+            qvs.set_animated = types.MethodType(setanimated, qvs)
+            qvs.axes = ax
+            qvs.figure = fig
+            qvs.draw = qvs.axes.draw
+
+            tit = ax.set_title('t = %g' % (t/Tper))
+            ims.append((qvs, tit))
+
         # animate(0)
         # self.show()
 
-        from matplotlib import animation
-        ani = animation.FuncAnimation(fig, animate, frames=len(ts))
+        # ani = animation.FuncAnimation(fig, animate, frames=len(ts))
+        ani = animation.ArtistAnimation(fig, ims, blit=False)
+        # ani.save('single.gif')  # see issue 5592
         self.show()
 
     @pytest.mark.parametrize('parallel', [True, False])
