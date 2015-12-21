@@ -35,18 +35,14 @@ class TestRing(Base, FFTMixin):
         elif sphere:
             P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetamax,
                                                  ngrid=ngrid)
-            r[:, :, 0] = z0 * e_r[0, :, :]
-            r[:, :, 1] = z0 * e_r[1, :, :]
-            r[:, :, 2] = z0 * e_r[2, :, :]
+            for i in range(3):
+                r[:, :, i] = z0 * e_r[i, :, :]
         else:
-            rmax = z0
             thetamax = min(15., thetamax)
             tm = np.radians(thetamax)
-            hyp = z0 / np.cos(tm)
-            rmax = hyp * np.sin(tm)
+            rmax = z0 * np.tan(tm)
             rng = np.linspace(-rmax, rmax, ngrid)
             X, Y = np.meshgrid(rng, rng)
-            # R = np.hyp(X, Y)
             r[:, :, 0] = X
             r[:, :, 1] = Y
             r[:, :, 2] = z0
@@ -251,11 +247,11 @@ class TestRing(Base, FFTMixin):
             self.save_fig('ramp_height_%gpi%s' % (ramp_h_fac, evalname), plt.gcf())
         self.show()
 
-    def test_rolf_pishift_anim(self):
+    @pytest.mark.parametrize('sphere', [True, False])
+    def test_rolf_pishift_anim(self, sphere):
         """
         N dipoles on a circle pointing in azimuthal direction with pi shift
         """
-        sphere = False
         k = 1.  # todo copy and pasted
         import scipy.constants.constants as co
         omega = k*co.c
@@ -273,18 +269,16 @@ class TestRing(Base, FFTMixin):
         if sphere:
             P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetamax,
                                                  ngrid=ngrid)
-            r[:, :, 0] = z0 * e_r[0, :, :]
-            r[:, :, 1] = z0 * e_r[1, :, :]
-            r[:, :, 2] = z0 * e_r[2, :, :]
+            self.tx = T*np.cos(P)
+            self.ty = T*np.sin(P)
+            for i in range(3):
+                r[:, :, i] = z0 * e_r[i, :, :]
         else:
-            rmax = z0
             thetamax = min(15., thetamax)
             tm = np.radians(thetamax)
-            hyp = z0 / np.cos(tm)
-            rmax = hyp * np.sin(tm)
+            rmax = z0 * np.tan(tm)
             rng = np.linspace(-rmax, rmax, ngrid)
             X, Y = np.meshgrid(rng, rng)
-            # R = np.hyp(X, Y)
             r[:, :, 0] = X
             r[:, :, 1] = Y
             r[:, :, 2] = z0
