@@ -206,6 +206,7 @@ class TestRing(Base, FFTMixin):
         ax.plot(self.tx, self.ty, '-k')
         ax.plot(self.tx.T, self.ty.T, '-k')
         ax.set_aspect('equal')
+        self.save_fig('mesh', fig)
         self.show()
 
     @pytest.mark.parametrize('sphere', [True, False])
@@ -247,8 +248,7 @@ class TestRing(Base, FFTMixin):
                        spp_ramp_height=ramp_h_fac*np.pi, show=False)
             plt.gca().set_title(('[ramp height %gpi] ' % ramp_h_fac) +
                                 plt.gca().get_title())
-            plt.savefig('spiral_ramp_height_%gpi%s.png' % (
-                ramp_h_fac, evalname))
+            self.save_fig('ramp_height_%gpi%s' % (ramp_h_fac, evalname), plt.gcf())
         self.show()
 
     def test_rolf_pishift_anim(self):
