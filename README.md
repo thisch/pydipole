@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/thisch/pydipole.svg?branch=master)]
+![Build Status](https://travis-ci.org/thisch/pydipole.svg?branch=master)
 
 Electric dipole radiation in near and far field
 ===============================================
