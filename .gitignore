@@ -8,3 +8,5 @@
 /build/
 /dipole/field.cpp
 /.cache/
+*.gif
+/log*
