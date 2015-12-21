@@ -255,14 +255,13 @@ class TestRing(Base, FFTMixin):
         k = 1.  # todo copy and pasted
         import scipy.constants.constants as co
         omega = k*co.c
-        T = 2*np.pi/omega
+        tmax = 2*np.pi/omega  # max. time
         shift = False
 
         ngrid = 256
-        k = 1.
         La = 2*np.pi/k
-        ndip = 256
-        z0 = 100.
+        ndip = 1
+        z0 = 100.*La
         r = np.empty((ngrid, ngrid, 3))
         thetamax = 15.
         self.log.info('zeval/lambda: %g', z0/La)
@@ -304,14 +303,75 @@ class TestRing(Base, FFTMixin):
                                     '%%f ms') % (r.shape[0]*r.shape[1])):
             Eres, Hres = dipole_general(r, pring, rring, phases, k, t=0)
 
-        ts = np.linspace(0, T, 12)
-        fig, axes = plt.subplots(nrows=len(ts), figsize=(6*len(ts), 5))
-        for t, ax in zip(ts, axes):
-            fig, ax = plt.subplots()
-            scur = (0.5*np.cross(Eres,
-                                 Hres.conjugate() + Hres*np.exp(2j*k*co.c*t)).real)
-            ax.imshow(scur[:, :, 2])
-            ax.set_ylabel('t=%g' % t)
+        ts = np.linspace(0., tmax, 20)
+        # fig, axes = plt.subplots(nrows=len(ts), figsize=(6*len(ts), 5))
+        # for t, ax in zip(ts, axes):
+        #     fig, ax = plt.subplots()
+        #     scur = (0.5*np.cross(Eres,
+        #                          Hres.conjugate() + Hres*np.exp(2j*k*co.c*t)).real)
+        #     ax.imshow(scur[:, :, 2])
+        #     ax.set_ylabel('t=%g' % t)
+
+        # matplotlib animation
+        fig, ax = plt.subplots()
+        if sphere:
+            ax.set_xlim(-thetamax, thetamax)
+            ax.set_ylim(-thetamax, thetamax)
+            ax.set_xlabel('thetax [deg]')
+            ax.set_ylabel('thetay [deg]')
+            # ax.set_title('Ex,Ey as a function of phi,theta')
+        else:
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_title('Ex,Ey as a function of x,y')
+            # TODO limits
+
+        def animate(i):
+            self.log.info('[%d/%d] ', i+1, len(ts))
+            z = 0.5*np.cross(Eres,
+                             Hres.conjugate() + Hres*np.exp(2j*k*co.c*ts[i])).real
+            # res = dipole_e_ff(r, pring, rring, phases, k=21, t=ts[i])
+            z = np.linalg.norm(z, axis=2)
+            qvs = ax.contourf(np.degrees(self.tx), np.degrees(self.ty), z, 25)
+            ax.set_title('t = %g' % ts[i])
+            return qvs
+
+        from matplotlib import animation
+        ani = animation.FuncAnimation(fig, animate, frames=len(ts))
+        self.show()
+
+    def test_simple_anim(self):
+        """
+        test matplotlib animation framework
+        """
+        k = 1.
+        import scipy.constants.constants as co
+        omega = k*co.c
+        tmax = 2*np.pi/omega  # max. time
+        ngrid = 256
+        thetamax = 15.
+        P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetamax,
+                                             ngrid=ngrid)
+        self.tx = T*np.cos(P)
+        self.ty = T*np.sin(P)
+
+        ts = np.linspace(0., tmax, 20)
+        fig, ax = plt.subplots()
+        ax.set_xlim(-thetamax, thetamax)
+        ax.set_ylim(-thetamax, thetamax)
+        ax.set_xlabel('thetax [deg]')
+        ax.set_ylabel('thetay [deg]')
+
+        def animate(i):
+            self.log.info('[%d/%d] ', i+1, len(ts))
+            qvs = ax.contourf(np.degrees(self.tx), np.degrees(self.ty),
+                              self.tx + i**0.2*self.ty)
+            ax.set_title('t = %g' % ts[i])
+            return qvs
+
+        from matplotlib import animation
+        ani = animation.FuncAnimation(fig, animate, frames=len(ts))
+        # ani.save('test.mp4')
         self.show()
 
     def test_gaussian(self):
