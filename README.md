@@ -1,5 +1,5 @@
-electric dipole radiation in near and far field
-================================
+Electric dipole radiation in near and far field
+===============================================
 
 The electric and the magnetic field of a single radiating dipole in vacuum centered at the origin (r=0) are given by
 
@@ -14,7 +14,7 @@ In the far field limit the fields are given by
 
 See the unit tests in ``dipole/tests/*.py`` for examples on how to use the mentioned functions.
 
-# API
+##API
 ```
 def dipole_general(np.ndarray[double_t, ndim=3] r,
                    np.ndarray[double_t, ndim=2] P,
@@ -32,13 +32,18 @@ def dipole_e_ff(np.ndarray[double_t, ndim=3] r,
     ...
     
 ```
+##Requirements
+* Python 3
+* Numpy
+* Cython
+* Matplotlib
+* py.test 
 
-
-# Compilation
+##Compilation
 
     python setup.py build_ext -i
 
-# Run unit tests
+##Run unit tests
 
 ```
 py.test
