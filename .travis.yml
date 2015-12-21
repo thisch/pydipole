@@ -2,8 +2,18 @@ language: python
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
   - "3.5"
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - gcc-4.8
+    - g++-4.8
 install:
   - sudo apt-get update
+  - sudo apt-get install -qq libboost-dev
+  - export CXX="g++-4.8" CC="gcc-4.8"
+  - ${CXX} --version
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -18,6 +28,8 @@ install:
   - pip install falafel
   - make
   - python setup.py install
+  - mkdir -p "$HOME/.config/matplotlib/"
+  - 'echo "backend: Agg" > "$HOME/.config/matplotlib/matplotlibrc"'
 
 script:
   - py.test -s --log
