@@ -16,6 +16,7 @@ import scipy.constants.constants as co
 
 
 cdef extern from "cpp/field.hpp":
+    # TODO bool calc_H
     cdef vector[vector[vector[complex_t]]] farfield_dipole_wrapper(
         vector[vector[vector[double_t]]] r,
         vector[vector[double_t]] P,
