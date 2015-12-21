@@ -16,7 +16,6 @@ class TestRing(Base, FFTMixin):
     def _rolf(self, sphere, shift, spp, rringfac=15, thetamax=70,
               horizontal_line=False, t=0, show=True, ax=None, ngrid=256,
               spp_ramp_height=2*np.pi):
-
         # FIXME implement amplitude correction if sphere=False and apply it
         # if desired
         k = 1.
@@ -26,18 +25,20 @@ class TestRing(Base, FFTMixin):
         r = np.empty((ngrid, ngrid, 3))
         self.log.info('zeval/lambda: %g', z0/La)
         if horizontal_line:
-            # on a sphere
+            postfix = '_on_sphere_line'
             r = np.empty((1, ngrid, 3))
             tlsp = np.radians(np.linspace(-thetamax, thetamax, ngrid))
             r[0, :, 0] = z0 * np.sin(tlsp)
             r[0, :, 1] = 0
             r[0, :, 2] = z0 * np.cos(tlsp)
         elif sphere:
+            postfix = '_on_sphere'
             P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetamax,
                                                  ngrid=ngrid)
             for i in range(3):
                 r[:, :, i] = z0 * e_r[i, :, :]
         else:
+            postfix = '_on_xyplane'
             thetamax = min(15., thetamax)
             tm = np.radians(thetamax)
             rmax = z0 * np.tan(tm)
@@ -126,7 +127,7 @@ class TestRing(Base, FFTMixin):
         if not general:
             ax.set_title('evaluation on sphere: %s, opening angle %g deg' % (
                 sphere, 2*thetamax))
-        self.save_fig('dummy', ax.figure)
+        self.save_fig(postfix, ax.figure)
         if show:
             self.show()
 
