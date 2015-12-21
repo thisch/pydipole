@@ -131,7 +131,7 @@ class TestRing(Base, FFTMixin):
             self.show()
 
     def test_fft(self):
-        """I would like to compare the results of the FFT method (used in the
+        """Here we compare the results of the FFT method (used in the
         papers by Rolf Szedlak) and the exact dipole radiation method.
 
         In theory there should be a 1:1 correspondence for small angles
