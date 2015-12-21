@@ -133,7 +133,7 @@ class TestAnalytic(Base):
                                     '%%f ms') % (r.shape[0]*r.shape[1])):
             Eres, Hres = dipole_general(r, pring, rring, phases, k, t=0)
 
-        ts = np.linspace(0., Tper*2, 30)
+        ts = np.linspace(0., Tper*2, 60)
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
         # ax.set_xlim(-thetamax, thetamax)
@@ -213,14 +213,19 @@ class TestAnalytic(Base):
             qvs.figure = fig
             qvs.draw = qvs.axes.draw
 
-            tit = ax.set_title('t = %g' % (t/Tper))
+            # FIXME title does not get updated
+            # tit = ax.set_title('t = %g' % (t/Tper))
+            tit = ax.text(0.5, 1.04, r'$\nu t = %g$' % (t/Tper),
+                          transform=ax.transAxes, ha='center', va='top',
+                          fontsize=14)
+
             ims.append((qvs, tit))
 
         # animate(0)
         # self.show()
 
         # ani = animation.FuncAnimation(fig, animate, frames=len(ts))
-        ani = animation.ArtistAnimation(fig, ims, blit=False)
+        ani = animation.ArtistAnimation(fig, ims, blit=False, interval=250)
         # ani.save('single.gif')  # see issue 5592
         self.show()
 
