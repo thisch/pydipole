@@ -94,6 +94,81 @@ class TestAnalytic(Base):
             self._plot_intens(T, P, field)
         self.show()
 
+    def test_single_anim(self):
+        """
+        animation of an oscillating dipole in the xy-plane
+        """
+        k = 1.  # todo copy and pasted
+        import scipy.constants.constants as co
+        omega = k*co.c
+        Tper = 2*np.pi/omega  # max. time
+
+        ngrid = 256
+        La = 2*np.pi/k
+        ndip = 1
+
+        r = np.empty((ngrid, ngrid, 3))
+        # thetamax = 15.
+        # z0 = 100.*La
+        # self.log.info('zeval/lambda: %g', z0/La)
+        # P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetamax, ngrid=ngrid)
+        # self.tx = T*np.cos(P)
+        # self.ty = T*np.sin(P)
+        # for i in range(3):
+        #     r[:, :, i] = z0 * e_r[i, :, :]
+        rmax = 1*La
+        rng = np.linspace(-rmax, rmax, ngrid)
+        X, Y = np.meshgrid(rng, rng)
+        r[:, :, 0] = X
+        r[:, :, 1] = Y
+        r[:, :, 2] = 0  # 0.05*La
+
+        pring = np.zeros((ndip, 3))  # dipole moments
+        pring[0, 1] = 1.  # y-Axis
+
+        rring = np.zeros((ndip, 3))  # dipol aufpunkte
+        phases = np.zeros(ndip)
+        from dipole.utils import Timer
+        with Timer(self.log.debug, ('dipole_general() (%d points) took '
+                                    '%%f ms') % (r.shape[0]*r.shape[1])):
+            Eres, Hres = dipole_general(r, pring, rring, phases, k, t=0)
+
+        ts = np.linspace(0., Tper*2, 30)
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        # ax.set_xlim(-thetamax, thetamax)
+        # ax.set_ylim(-thetamax, thetamax)
+        # ax.set_xlabel('thetax [deg]')
+        # ax.set_ylabel('thetay [deg]')
+        ax.set_xlim(-rmax, rmax)
+        ax.set_ylim(-rmax, rmax)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+
+        levels = np.linspace(0, 8e17, 25)
+        # levels = np.linspace(0, 8e20, 25)
+        # levels = None
+
+        def animate(i):
+            self.log.info('[%d/%d] ', i+1, len(ts))
+            z = 0.5*np.cross(Eres,
+                             Hres.conjugate() + Hres*np.exp(2j*k*co.c*ts[i])).real
+            # res = dipole_e_ff(r, pring, rring, phases, k=21, t=ts[i])
+            # z = (Eres*np.exp(-1j*k*co.c*ts[i])).real
+            z = np.linalg.norm(z, axis=2)
+            print('z.max(): %g' % z.max())
+            # qvs = ax.contourf(np.degrees(self.tx), np.degrees(self.ty), z, 25)
+            qvs = ax.contourf(X, Y, z, levels=levels)
+            ax.set_title('t = %g' % (ts[i]/Tper))
+            return qvs
+
+        # animate(0)
+        # self.show()
+
+        from matplotlib import animation
+        ani = animation.FuncAnimation(fig, animate, frames=len(ts))
+        self.show()
+
     @pytest.mark.parametrize('parallel', [True, False])
     def test_2parallel(self, parallel):
         """ 2 parallel dipoles
