@@ -27,7 +27,8 @@ install:
   - source activate test-environment
   - pip install falafel
   - make
-  - python setup.py install
+  # workaround travis build issue (py.test import mismatch)
+  # - python setup.py install
   - mkdir -p "$HOME/.config/matplotlib/"
   - 'echo "backend: Agg" > "$HOME/.config/matplotlib/matplotlibrc"'
 
