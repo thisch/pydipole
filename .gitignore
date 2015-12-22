@@ -10,3 +10,5 @@
 /.cache/
 *.gif
 /log*
+/dist
+/dipole.egg-info
