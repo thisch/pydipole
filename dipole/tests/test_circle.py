@@ -1,4 +1,7 @@
 import numpy as np
+from scipy.optimize import bisect
+from scipy.interpolate import interp1d
+from numpy.testing import assert_almost_equal
 
 from ..helper import unit_vectors
 from ..field import dipole_e_ff
@@ -12,10 +15,16 @@ import matplotlib.pyplot as plt
 
 class TestCircle(Base, FFTMixin):
 
-    def analytic_rad(self, k, rcirc, krfac=0.4):
+    def analytic_rad(self, k, rcirc, thetas):
         """
         calculates the far-field diffraction profile of a plane wave incident on
         a circular aperture, (Airy function)
+
+        Parameters:
+        -----------
+        k: wave number
+        rcirc: radius of aperture
+        thetas: array of angles [in deg], where the far-field should be evaluated
 
         Returns:
         --------
@@ -24,23 +33,49 @@ class TestCircle(Base, FFTMixin):
 
         """
         from scipy.special import j1
-        krmax = k*krfac
-        kr = np.linspace(-krmax, krmax, 256)  # = +-hypot(kx, ky)
-        kz = np.sqrt(k**2 - kr**2)
-        theta = np.angle(kz + 1j*kr)
-
-        # # see Fourier scaling theorem
-        # scaling = abs(rcirc)
-        # krscal = kr*rcirc
-        # Fcirc = scaling * j1(krscal)*2*np.pi/krscal
 
         # expression of the airy pattern (see wikipedia Airy Disk)
-        krscal = rcirc*kr  # = k*rcirc*np.sin(theta)
+        krscal = k*rcirc*np.sin(np.radians(thetas))
         Fcirc = 2*j1(krscal)/krscal
+        return thetas, (Fcirc/Fcirc.max())**2  # normalized intensity
 
-        xdata = np.degrees(theta)  # theta in deg
-        ydata = (Fcirc/Fcirc.max())**2  # normalized intensity
-        return xdata, ydata
+    def normalize_and_beamdiv(self, thetas, farfield):
+        """
+        Parameters:
+        -----------
+        thetas: array [deg]
+        farfield: array containing intensities
+
+        Returns:
+        beamdiv: float [deg]
+        farfield: normalized farfield intensities
+        """
+        # cubic interp. is slow :(
+        with Timer(self.log.debug, 'interps took %f ms'):
+            func = interp1d(thetas, farfield, kind='cubic')
+        fmax = func(0)  # we assume that the max is at the center
+        farfield = farfield/fmax
+        thresh = np.exp(-2)
+        with Timer(self.log.debug, 'bisecting took %f ms'):
+            # ftol = 1e-10
+            rootfunc = lambda x: func(x)/fmax - thresh
+            tright = bisect(rootfunc, 0, thetas.max())  # , ftol=ftol)
+            tleft = bisect(rootfunc, thetas.min(), 0)  # , ftol=ftol)
+            fright, fleft = rootfunc([tright, tleft])
+            self.log.debug("debug errl: %g errr: %g" % (abs(fleft), abs(fright)))
+        trl = tright - tleft  # beam div.
+        self.log.debug('tleft %g, tright %g', tleft, tright)
+        return trl, farfield
+
+    def airy_beam_divergence(self, k, r):
+        """
+        analytical width of an airy disk
+        """
+        # j1(x) = x/(2*e) -> xana
+        xana = 2.58383899
+        # xana = k*rcirc*np.sin(np.radians(tana))
+        tana = np.degrees(np.arcsin(xana/(k*r)))
+        return 2*tana
 
     def test_fft(self):
         """
@@ -48,7 +83,7 @@ class TestCircle(Base, FFTMixin):
         """
         k = 0.08
         rcirc = 250.
-        incfac = 16
+        incfac = 8
         thetamax = 20.
 
         self._fft_setup(k, rcirc, incfac)
@@ -71,22 +106,28 @@ class TestCircle(Base, FFTMixin):
         ax.set_ylim(-thetamax, thetamax)
         self.save_fig('fft_pcolor', fig)
 
-        # TODO splining of datapoints
         fig, ax = plt.subplots()
+        ax.plot(*self.analytic_rad(k, rcirc,
+                                   np.linspace(-thetamax, thetamax, 1024)),
+                ls='-', c='r', label='analytic')
+
         rowid = int(self.tx.shape[0]/2)
-        ff = farfield[rowid, :]
         xdata = np.degrees(self.tx[rowid, :])
-        ydata = ff/np.nanmax(ff)  # farfield data normalized to 1
+        ydata = farfield[rowid, :]
+        # remove nan values
+        ind = ~(np.isnan(xdata) | np.isnan(ydata))
+        xdata, ydata = xdata[ind], ydata[ind]
+        beamdiv, ydata = self.normalize_and_beamdiv(xdata, ydata)
         ax.plot(xdata, ydata, '-x', label='fft')
-        ax.plot(*self.analytic_rad(k, rcirc), ls='-', c='r', label='analytic')
-        ythresh = np.exp(-2)
-        ax.axhline(y=ythresh, c='k')
+
+        airydiv = self.airy_beam_divergence(k, rcirc)
+        ax.axhline(y=np.exp(-2), c='k')
         ax.grid(True)
-        beamdiv = xdata[ydata > ythresh].ptp()
-        # analytical beam divergence angle:
-        ax.set_title('numerical divergence angle: %g°' % beamdiv)
+        ax.set_title('numerical divergence angle: %g° (airy disk width %g°)' % (
+            beamdiv, airydiv))
         ax.set_xlabel('theta_x')
         ax.legend(fontsize=8)
+        assert_almost_equal(beamdiv, airydiv, decimal=2)
         self.show()
 
     def test_dipole_density(self):
@@ -99,7 +140,7 @@ class TestCircle(Base, FFTMixin):
         Lam = 2*np.pi/k
         reval = 1000*Lam
         rcirc = 250.
-        numdps = 4000
+        numdps = 1000
         thetamax = 30
 
         rdp = np.random.rand(numdps, 2)
@@ -144,29 +185,60 @@ class TestCircle(Base, FFTMixin):
         plt.xlabel('theta_x [deg]')
         plt.ylabel('theta_y [deg]')
 
-        ngrid = 1024
-        r = np.empty((1, ngrid, 3))
-        tlsp = np.radians(np.linspace(-thetamax, thetamax, ngrid))
-        r[0, :, 0] = reval * np.sin(tlsp)
-        r[0, :, 1] = 0
-        r[0, :, 2] = reval * np.cos(tlsp)
+        phis = np.linspace(0, 2*np.pi, 16, endpoint=False)
+        phis.shape = (1, -1)
+        ngrid = 512
+        r = np.empty((1, ngrid*phis.size, 3))
+        tlsp = np.linspace(-thetamax, thetamax, ngrid)
+        tlsprad = np.radians(tlsp)
+        tlsprad.shape = (-1, 1)
+        r[0, :, 0] = (reval * np.sin(tlsprad) * np.cos(phis)).flatten()
+        r[0, :, 1] = (reval * np.sin(tlsprad) * np.sin(phis)).flatten()
+        r[0, :, 2] = (reval * np.cos(tlsprad) * np.ones_like(phis)).flatten()
         with Timer(self.log.debug,
                    'dipole_e_ff (ndip: %d) at %d eval pts took %%f ms' % (
                        numdps, ngrid)):
             res = dipole_e_ff(r, pdp, rdip, dipole_phis, k, t=0)
-        farfield = (np.linalg.norm(res, axis=2)**2).flatten()
-        farfield /= farfield.max()
-        plt.subplots()
+        allfarfield = (np.linalg.norm(res, axis=2)**2).flatten()
 
-        plt.plot(np.degrees(tlsp), farfield, '-', label='dipole rad')
-        plt.plot(*self.analytic_rad(k, rcirc), ls='-', c='r',
-                 label='analytic aperture rad')
-        thline = np.exp(-2)
-        plt.axhline(y=thline, c='k')
-        twotheta = tlsp[farfield > thline].ptp()
-        plt.title("2*theta = %g deg" % (np.degrees(twotheta)))
+        # TODO determine 1/e^2 contour and plot this contour in a r(phi) plot
+        # and in a theta_y theta_x plot.
+        divs = []
+        for i in range(phis.size):
+            farfield = allfarfield[i::phis.size]
+            beamdiv, farfield = self.normalize_and_beamdiv(tlsp, farfield)
+            self.log.info("phi={} deg: beamdiv: {} deg".format(
+                np.degrees(phis.flat[i]), beamdiv))
+            divs.append(beamdiv)
+            plt.subplots()
+            plt.plot(tlsp, farfield, '-', label='dipole rad')
+            plt.plot(*self.analytic_rad(k, rcirc, tlsp),
+                     ls='-', c='r', label='analytic aperture rad')
+            plt.axhline(y=np.exp(-2), c='k')
+            plt.title("phi=%g deg, beamdiv = %g deg" % (np.degrees(phis.flat[i]), beamdiv))
+            plt.grid(True)
+            plt.legend(fontsize=8)
+        divs = np.array(divs)
+        self.log.info('beamdivergences: min {}, max {}, mean {}, std {}'.format(
+            divs.min(), divs.max(), divs.mean(), divs.std()))
+
+        plt.subplots()
+        plt.title('beam divergences')
+        plt.plot(np.degrees(phis.flatten()), divs, 'o')
         plt.grid(True)
-        plt.legend(fontsize=8)
+        plt.xlabel('phi')
+
+        plt.subplots()
+        plt.title('beam shape')
+        pfine = np.linspace(0, 2*np.pi, 512)
+        divm = divs.mean()
+        plt.plot(divs*np.cos(phis.flatten()),
+                 divs*np.sin(phis.flatten()), 'o-')
+        plt.plot(divm*np.cos(pfine), divm*np.sin(pfine), 'r-', alpha=0.5)
+        plt.grid(True)
+        plt.xlabel('x')
+        plt.ylabel('y')
+
         self.show()
 
     def test_analytic_ft(self):
@@ -175,17 +247,23 @@ class TestCircle(Base, FFTMixin):
         """
         k = 0.08
         rcirc = 250.
-        xdata, ydata = self.analytic_rad(k, rcirc)
+        tm = 40
+        thetas = np.linspace(-tm, tm, 1024)
+        xdata, ydata = self.analytic_rad(k, rcirc, thetas)
+
+        self.log.debug('2*tana %g deg', self.airy_beam_divergence(k, rcirc))
 
         fig, ax = plt.subplots()
-        ax.plot(xdata, ydata, '-x')
         ax.set_xlabel(r'$\theta [°]$')
         ax.set_ylabel(r'|FT(uniform disk)|^2')
         ythresh = np.exp(-2)
         ax.axhline(y=ythresh, c='k')
         ax.grid(True)
-        beamdiv = xdata[ydata > ythresh].ptp()
-        ax.set_title('analytical divergence angle: %g°' % beamdiv)
-        assert beamdiv < 14.6
-        assert beamdiv > 14.0
+
+        # TODO std. of beamdiv
+        beamdiv, ydata = self.normalize_and_beamdiv(thetas, ydata)
+        ax.plot(xdata, ydata, '-')
+        ax.axvspan(-beamdiv/2., beamdiv/2., color='r', alpha=0.5)
+        ax.set_title('divergence angle: %g°' % beamdiv)
+        assert_almost_equal(beamdiv, self.airy_beam_divergence(k, rcirc), decimal=4)
         self.show()
