@@ -14,7 +14,7 @@ class TestCircle(Base, FFTMixin):
 
     def analytic_rad(self, k, rcirc, krfac=0.4):
         """
-        calculated the far-field diffraction profile of a plane wave incident on
+        calculates the far-field diffraction profile of a plane wave incident on
         a circular aperture, (Airy function)
 
         Returns:
