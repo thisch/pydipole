@@ -4,6 +4,11 @@ from ..utils import Timer
 
 
 class FFTMixin:
+    def _fourier_single(self, data):
+        with Timer(self.log.debug, 'single fft: %f ms'):
+            absfft = abs(np.fft.fftshift(np.fft.fft2(data, s=self.tx.shape)))
+        return absfft**2
+
     def _fourier_hvp(self, hp, vp):
         with Timer(self.log.debug, '2x fft: %f ms'):
             absffthp = abs(np.fft.fftshift(np.fft.fft2(hp, s=self.tx.shape)))
