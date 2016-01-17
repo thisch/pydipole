@@ -11,6 +11,10 @@ using namespace std;
 
 typedef boost::multi_array<complex<double>, 3> restype;
 
+static  double c = 299792458.;
+static  double mu0 = 4*M_PI*1e-7;
+static  double eps0 = 1./(mu0*c*c);
+
 
 restype dipole_field_ff(boost::multi_array<double, 3>& r,
                         boost::multi_array<double, 2>& p,
@@ -20,6 +24,8 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
 {
     // computes the vectorial E field of a set of oscillating dipoles in the
     // far field
+
+    // Note: we use the following time dependence of the phasors: exp(-i*w*t)
 
     // Parameters
     // ----------
@@ -37,10 +43,6 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
     int N = r.shape()[0];
     int M = r.shape()[1];
     int ndip = p.shape()[0]; // number of dipoles
-
-    double c = 299792458.;
-    double mu0 = 4*M_PI*1e-7;
-    double eps0 = 1./(mu0*c*c);
 
     restype res(boost::extents[r.shape()[0]][r.shape()[1]][3]);
 
@@ -72,7 +74,7 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
                 magrprime = sqrt(magrprime);
                 const double krp = k*magrprime;
                 // todo long double?
-                auto expfac = exp(complex<double>(0, k*c*t - krp + phases[d]))/(
+                auto expfac = exp(complex<double>(0, krp - (k*c*t + phases[d])))/(
                     4*M_PI*eps0);
                 auto efac = k*k/(magrprime*magrprime*magrprime);
 
@@ -106,6 +108,8 @@ restype dipole_field_general(boost::multi_array<double, 3>& r,
 {
     // computes the vectorial E or H  field of a set of oscillating dipoles
 
+    // Note: we use the following time dependence of the phasors: exp(-i*w*t)
+
     // Parameters
     // ----------
     // r: real NxMx3 matrix
@@ -122,10 +126,6 @@ restype dipole_field_general(boost::multi_array<double, 3>& r,
     int N = r.shape()[0];
     int M = r.shape()[1];
     int ndip = p.shape()[0]; // number of dipoles
-
-    double c = 299792458.;
-    double mu0 = 4*M_PI*1e-7;
-    double eps0 = 1./(mu0*c*c);
 
     double prefac = calc_H ? k*k*c/(4*M_PI) : 1./(4*M_PI*eps0);
 
@@ -161,7 +161,7 @@ restype dipole_field_general(boost::multi_array<double, 3>& r,
                     magrprime = sqrt(magrprime);
                     const double krp = k*magrprime;
                     // todo long double?
-                    auto expfac = exp(complex<double>(0, k*c*t - krp + phases[d]));
+                    auto expfac = exp(complex<double>(0, krp - (k*c*t + phases[d])));
 
                     vector<double> rprime_cross_p(3);
                     // r' x p
@@ -190,7 +190,7 @@ restype dipole_field_general(boost::multi_array<double, 3>& r,
                     magrprime = sqrt(magrprime);
                     const double krp = k*magrprime;
                     // todo long double?
-                    auto expfac = exp(complex<double>(0, k*c*t - krp + phases[d]));
+                    auto expfac = exp(complex<double>(0, krp - (k*c*t + phases[d])));
 
                     auto e1fac = k*k/(magrprime*magrprime*magrprime);
                     auto e2fac = complex<double>(1, -krp)/(magrprime*magrprime*magrprime);
