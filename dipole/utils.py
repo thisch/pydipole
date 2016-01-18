@@ -1,3 +1,5 @@
+import numpy as np
+
 from timeit import default_timer
 
 
@@ -21,22 +23,61 @@ class Timer(object):
             self.stream('elapsed time: %f ms' % self.elapsed)
 
 
-# WIP
 class GaussianBeam:
 
-    def waist(self, z):
-        return 25.
+    def __init__(self, waist_size, k, E0, pol):
+        self.w0 = waist_size
+        self.k = k
+        self.E0 = E0
+        Lam = 2*np.pi/k
+        self.zr = np.pi*self.w0**2/Lam  # Rayleigh range
+        self.pol = pol
+
+    def q(self, z):
+        """
+        complex beam parameter
+        """
+        return z + 1j*self.zr
+
+    def w(self, z):
+        """radius at which the field amplitudes fall to 1/e of their axial values,
+        at the plane z along the beam,
+
+        """
+        return self.w0*np.sqrt(1 + (z/self.zr)**2)
 
     def R(self, z):
-        return 1.
+        """
+        Radius of curvature
+        """
+        return z*(1 + (z/self.zr)**2)
 
     def gouy(self, z):
-        return 0.
+        return np.arctan(z/self.zr)
 
     def eval(self, z, r):
-        import numpy as np
-        return self.E0*self.w0/self.waist(z)*np.exp(
-            -r**2/self.waist(z)**2 +
-            -1j*self.k*z +
-            -1j*self.k*r**2/(2*self.R(z)) +
-            -1j*self.gouy(z))
+        scalval = 1/self.q(z)*np.exp(-1j*self.k*r**2/(2*self.q(z)))
+        return self.add_polarization(scalval, z, r)
+
+    def eval_vec(self, rvec):
+        assert rvec.ndim == 3
+        z = rvec[:, :, 2]
+        r = np.hypot(rvec[:, :, 0], rvec[:, :, 1])
+        return self.eval(z, r)
+
+    def add_polarization(self, scalar, z, r):
+        ones = np.ones_like(scalar)
+        # the following expressions are valid for the exp(-iwt) time
+        # dependence of the phasors.
+        if self.pol == 'LHCP':
+            pre = [1., 1j, 0]
+        elif self.pol == 'RHCP':
+            pre = [1., -1j, 0]
+        elif self.pol == 'x':
+            pre = [1., 0, 0]
+        elif self.pol == 'y':
+            pre = [0, 1, 0]
+        else:
+            raise ValueError('invalid polarization value %s' % self.pol)
+        tmp = np.dstack([pre[0]*ones, pre[1]*ones, pre[2]*ones])
+        return scalar[:, :, None] * tmp
