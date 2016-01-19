@@ -39,6 +39,12 @@ class GaussianBeam:
         """
         return z + 1j*self.zr
 
+    def qinv(self, z):
+        """
+        inverse of the complex beam parameter
+        """
+        return 1./self.R(z) - 2j/(self.k*self.w(z)**2)
+
     def w(self, z):
         """radius at which the field amplitudes fall to 1/e of their axial values,
         at the plane z along the beam,
@@ -50,7 +56,7 @@ class GaussianBeam:
         """
         Radius of curvature
         """
-        return z*(1 + (z/self.zr)**2)
+        return z*(1 + (self.zr/z)**2)
 
     def gouy(self, z):
         return np.arctan(z/self.zr)
