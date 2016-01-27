@@ -374,30 +374,3 @@ class TestRing(Base, FFTMixin):
         ani = animation.FuncAnimation(fig, animate, frames=len(ts))
         # ani.save('test.mp4')
         self.show()
-
-    def test_gaussian(self):
-        # TODO add more logic to this test
-        from dipole.utils import GaussianBeam
-        gb = GaussianBeam()
-        gb.k = 1.
-        gb.z = 0
-        gb.w0 = 1.
-        gb.E0 = 1.
-
-        ngrid = 128
-        z0 = 100.
-        thetamax = 15.
-        tm = np.radians(thetamax)
-        hyp = z0 / np.cos(tm)
-        rmax = hyp * np.sin(tm)
-        rng = np.linspace(-rmax, rmax, ngrid)
-        X, Y = np.meshgrid(rng, rng)
-        R = np.hypot(X, Y)
-
-        Efield = gb.eval(0, R)
-
-        fig, ax = plt.subplots()
-        ax.contourf(X, Y, np.angle(Efield))
-        fig, ax = plt.subplots()
-        ax.contourf(X, Y, abs(Efield)**2)
-        self.show()
