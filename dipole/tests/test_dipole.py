@@ -12,10 +12,32 @@ from .base import Base
 
 LG = logging.getLogger('dip')
 
-rextrafac = 100.
+
+def gen_r(thetamax, ngrid, reval, onsphere):
+    # TODO generalize this function and move it to dipole.utils
+    P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetamax,
+                                         ngrid=ngrid)
+    r = np.empty((ngrid, ngrid, 3))
+    if onsphere:
+        r[:, :, 0] = reval * e_r[0, :, :]
+        r[:, :, 1] = reval * e_r[1, :, :]
+        r[:, :, 2] = reval * e_r[2, :, :]
+    else:
+        rmax = np.tan(np.radians(thetamax)) * reval
+        LG.info(" %s deg", np.degrees(cmath.phase(reval + 1j*np.sqrt(2)*rmax)))
+        rng = np.linspace(-rmax, rmax, ngrid)
+        X, Y = np.meshgrid(rng, rng)
+        r[:, :, 0] = X
+        r[:, :, 1] = Y
+        r[:, :, 2] = reval
+    LG.debug("onsphere: %s\tfirst r vec %s", onsphere, r[0, 0, :])
+    if onsphere:
+        return T, P, r
+    else:
+        return X, Y, r
 
 
-def main(test, diameter, ndip, k=0.08, ngrid=100, thetaopen=45.,
+def main(test, diameter, ndip, k=0.08, ngrid=100, thetamax=45.,
          aligned_dipoles=False, align_axis='z', onsphere=True,
          plot=True, seed=12345):
     LG.info('#### diameter disk=%g, #dips=%d, k=%s', diameter, ndip, k)
@@ -23,27 +45,8 @@ def main(test, diameter, ndip, k=0.08, ngrid=100, thetaopen=45.,
 
     np.random.seed(seed)
     rdisk = diameter/2.
-    z0 = rdisk*rextrafac  # z coord of xy plane
-    rmax = np.tan(np.radians(thetaopen)) * z0
-
-    P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetaopen,
-                                         ngrid=ngrid)
-    r = np.empty((ngrid, ngrid, 3))
-    if onsphere:
-        r[:, :, 0] = z0 * e_r[0, :, :]
-        r[:, :, 1] = z0 * e_r[1, :, :]
-        r[:, :, 2] = z0 * e_r[2, :, :]
-    else:
-        LG.info(" %s deg", np.degrees(cmath.phase(z0 + 1j*np.sqrt(2)*rmax)))
-        rng = np.linspace(-rmax, rmax, ngrid)
-        X, Y = np.meshgrid(rng, rng)
-        r[:, :, 0] = X
-        r[:, :, 1] = Y
-        r[:, :, 2] = z0
-    LG.debug("onsphere: %s\tfirst r vec %s", onsphere, r[0, 0, :])
-
-    tot = np.zeros(r.shape, dtype='complex128')
-    res = np.empty(r.shape, dtype='complex128')
+    rparams = gen_r(thetamax, ngrid, reval=rdisk*100, onsphere=onsphere)
+    tot = np.zeros(rparams[-1].shape, dtype='complex128')
 
     try:
         k[0]
@@ -72,26 +75,39 @@ def main(test, diameter, ndip, k=0.08, ngrid=100, thetaopen=45.,
 
         phases = np.r_[dipole_phis]
         t0 = 0
-        res = dipole_e_ff(r, pdisk, rdip, phases, kcur, t0)
-        tot += res
-    return T, P, tot
+        tot += dipole_e_ff(rparams[-1], pdisk, rdip, phases, kcur, t0)
+
+    return rparams + (tot,)
 
 
 class TestAnalytic(Base):
 
-    @pytest.mark.parametrize('k', [0.01, 1.0])
-    def test_single(self, k):
+    @pytest.mark.parametrize(('k', 'onsphere'),
+                             ([0.01, True],
+                              [0.01, False],
+                              [1., True],
+                              [1., False]))
+    def test_single(self, k, onsphere):
         """
         single dipole
         """
-
-        k = 0.01
-
+        if not onsphere:
+            thetamax = 40.
+        else:
+            thetamax = 90.
         for align in 'xyz':
-            T, P, field = main(self, diameter=100, ndip=1, aligned_dipoles=True,
-                               thetaopen=90, align_axis=align,
-                               k=[k], ngrid=200)
-            self._plot_intens(T, P, field)
+            fparams = main(self, diameter=100, ndip=1, aligned_dipoles=True,
+                           thetamax=thetamax, align_axis=align,
+                           onsphere=onsphere, k=[k], ngrid=200)
+            if onsphere:
+                T, P, _, field = fparams
+                self._plot_intens(T, P, field)
+            else:
+                X, Y, _, field = fparams
+                self._plot_intens(field=field, XY=(X, Y))
+            import matplotlib.pyplot as plt
+            ax = plt.gca()
+            ax.set_title('k=%g, dipole orientation: %s-axis' % (k, align))
         self.show()
 
     def test_single_anim(self):
@@ -177,7 +193,7 @@ class TestAnalytic(Base):
         def animate(i):
             self.log.info('[%d/%d] ', i+1, len(ts))
             z = 0.5*np.cross(Eres,
-                             Hres.conjugate() + Hres*np.exp(2j*k*co.c*ts[i])).real
+                             Hres.conjugate() + Hres*np.exp(-2j*k*co.c*ts[i])).real
             # res = dipole_e_ff(r, pring, rring, phases, k=21, t=ts[i])
             # z = (Eres*np.exp(-1j*k*co.c*ts[i])).real
             z = np.linalg.norm(z, axis=2)
@@ -190,7 +206,7 @@ class TestAnalytic(Base):
         ims = []
         for t in ts:
             z = 0.5*np.cross(Eres,
-                             Hres.conjugate() + Hres*np.exp(2j*k*co.c*t)).real
+                             Hres.conjugate() + Hres*np.exp(-2j*k*co.c*t)).real
             z = np.linalg.norm(z, axis=2)
             # print('z.max(): %g' % z.max())
             qvs = ax.contourf(X, Y, z, levels=levels, extend='both')
@@ -237,17 +253,9 @@ class TestAnalytic(Base):
         k = 1.
         La = 2*np.pi/k
         ndip = 2
-        P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=90.,
-                                             ngrid=ngrid)
-        r = np.empty((ngrid, ngrid, 3))
-        z0 = 500.
-        LG.info("reval/lambda = %g", z0/La)
-        r[:, :, 0] = z0 * e_r[0, :, :]
-        r[:, :, 1] = z0 * e_r[1, :, :]
-        r[:, :, 2] = z0 * e_r[2, :, :]
-        LG.debug("first r vec %s", r[0, 0, :])
+        thetamax = 90.
 
-        res = np.empty(r.shape, dtype='complex128')
+        T, P, r = gen_r(thetamax, ngrid, onsphere=True, reval=500.)
 
         pdisk = np.zeros((ndip, 3))
         pdisk[:, 2] = 1.
@@ -266,4 +274,27 @@ class TestAnalytic(Base):
         self._plot_intens(T, P, res)
         self._plot_poynting(T, P, S=np.linalg.norm(Smean, axis=2),
                             title='poynting')
+        self.show()
+
+    def test_2antiparallel(self):
+        ngrid = 256
+        k = 1.
+        La = 2*np.pi/k
+        ndip = 2
+        thetamax = 90.
+        reval = 1000*La
+        T, P, r = gen_r(thetamax, ngrid, onsphere=True, reval=reval)
+
+        pdisk = np.zeros((ndip, 3))
+        pdisk[:, 2] = 1.
+        pdisk[1, 2] = -1.
+
+        for distfac in [0.1, 1, 10, 100, 1000]:
+            rdip = np.zeros((2, 3))
+            rdip[1, 0] = distfac*La/2
+            rdip[0, 0] = -distfac*La/2
+
+            phases = np.array([0., 0.])
+            res = dipole_e_ff(r, pdisk, rdip, phases, k, 0)
+            self._plot_intens(T, P, res, title='distfac=%g' % distfac)
         self.show()
