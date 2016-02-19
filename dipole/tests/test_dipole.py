@@ -15,11 +15,10 @@ LG = logging.getLogger('dip')
 
 def main(test, diameter, ndip, k=0.08, ngrid=100, thetamax=45.,
          aligned_dipoles=False, align_axis='z', onsphere=True,
-         plot=True, seed=12345):
+         plot=True):
     LG.info('#### diameter disk=%g, #dips=%d, k=%s', diameter, ndip, k)
     LG.debug('spherical grid points: %d' % ngrid)
 
-    np.random.seed(seed)
     rdisk = diameter/2.
     rparams = gen_r(thetamax, ngrid, reval=rdisk*100, onsphere=onsphere)
     tot = np.zeros(rparams[-1].shape, dtype='complex128')
