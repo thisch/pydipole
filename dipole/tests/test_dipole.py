@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import cmath
 import logging
 import numpy as np
 import pytest
@@ -14,27 +13,24 @@ from .base import Base
 LG = logging.getLogger('dip')
 
 
-def main(test, diameter, ndip, k=0.08, ngrid=100, thetamax=45.,
-         aligned_dipoles=False, align_axis='z', onsphere=True,
+def main(test, ndip, k=0.08, ngrid=100, thetamax=45.,
+         rdisk=None, aligned_dipoles=False, align_axis='z', onsphere=True,
          plot=True):
-    LG.info('#### diameter disk=%g, #dips=%d, k=%s', diameter, ndip, k)
-    LG.debug('spherical grid points: %d' % ngrid)
+    Lam = 2*np.pi/k
+    reval = 1000*Lam
+    reval2 = 0.5*Lam
+    LG.info('#### SETTINGS: #dips=%d, k=%g, reval=%g', ndip, k, reval)
 
-    rdisk = diameter/2.
-    rparams = gen_r(thetamax, ngrid, reval=rdisk*100, onsphere=onsphere)
-    tot = np.zeros(rparams[-1].shape, dtype='complex128')
+    rparams = gen_r(ngrid, reval=reval, onsphere=onsphere, thetamax=thetamax)
+    if rdisk:
+        rparams2 = gen_r(ngrid, reval=reval2, onsphere=False,
+                         rmax=rdisk*1.2)
 
-    try:
-        k[0]
-    except TypeError:
-        k = [k]
-
-    for kcur in k:
-        LG.info('kcur %g', kcur)
-        phases = np.random.rand(ndip) * 2*np.pi
-
-        pdisk = 2.*(np.random.rand(ndip, 3) - .5)  # dipole moments
-        if aligned_dipoles:
+    pdisk = 2.*(np.random.rand(ndip, 3) - .5)  # dipole moments
+    if aligned_dipoles:
+        if align_axis == 'xy':
+            pdisk[:, 2] = 0.
+        else:
             pdisk = np.zeros((ndip, 3))
             if align_axis == 'z':
                 pdisk[:, 2] = 1.
@@ -43,15 +39,22 @@ def main(test, diameter, ndip, k=0.08, ngrid=100, thetamax=45.,
             elif align_axis == 'y':
                 pdisk[:, 1] = 1.
 
+    if ndip == 1:
+        rdip = np.zeros((ndip, 3))
+        phases = np.zeros(ndip)
+    else:
         rdip = (np.random.rand(ndip, 3) - .5)*2*rdisk  # dipol aufpunkte
         # LG.info("rdip/rdisk %s", rdip[0,:]/rdisk)
         rdip[:, 2] = 0.  # all dipoles lay in the xy-plane
-        if ndip == 1:
-            rdip[:, :] = 0.  # dipole at the origin
-        # ax.plot(rdip[:, 0], rdip[:, 1], 'x', label='k=%g' % kcur)
-        tot += dipole_e_ff(rparams[-1], pdisk, rdip, phases, kcur, t=0)
+        phases = np.random.rand(ndip) * 2*np.pi
 
-    return rparams + (tot,)
+        # ax.plot(rdip[:, 0], rdip[:, 1], 'x', label='k=%g' % kcur)
+    tot = dipole_e_ff(rparams[-1], pdisk, rdip, phases, k, t=0)
+    if rdisk is not None:
+        tot2, _ = dipole_general(rparams2[-1], pdisk, rdip,
+                                 phases, k, t=0)
+        return reval, rparams + (tot,), reval2, rparams2 + (tot2,)
+    return reval, rparams + (tot,)
 
 
 class TestAnalytic(Base):
@@ -70,9 +73,9 @@ class TestAnalytic(Base):
         else:
             thetamax = 90.
         for align in 'xyz':
-            fparams = main(self, diameter=100, ndip=1, aligned_dipoles=True,
-                           thetamax=thetamax, align_axis=align,
-                           onsphere=onsphere, k=[k], ngrid=200)
+            reval, fparams = main(self, ndip=1, aligned_dipoles=True,
+                                  thetamax=thetamax, align_axis=align,
+                                  onsphere=onsphere, k=k, ngrid=200)
             if onsphere:
                 T, P, _, field = fparams
                 self._plot_intens(T, P, field)
@@ -83,26 +86,38 @@ class TestAnalytic(Base):
             ax.set_title('k=%g, dipole orientation: %s-axis' % (k, align))
         self.show()
 
-    def test_single_quiver(self, k=1., onsphere=False):
-        """
-        polarization in the far-field of a single oscillating dipole
-        """
+    def _polarization_main(self, ndip, onsphere=False, k=1., rdisk=None,
+                           alignments=None):
         if not onsphere:
-            thetamax = 10.
+            thetamax = 14
         else:
             thetamax = 20.
-        for align in 'xyz':
-            fparams = main(self, diameter=100, ndip=1, aligned_dipoles=True,
-                           thetamax=thetamax, align_axis=align,
-                           onsphere=onsphere, k=k, ngrid=32)
+        if alignments is None:
+            alignments = 'xyz'
+        for align in alignments:
+            ret = main(self, ndip=ndip, aligned_dipoles=True,
+                       rdisk=rdisk, thetamax=thetamax, align_axis=align,
+                       onsphere=onsphere, k=k, ngrid=32)
+            if rdisk is None:
+                reval, fparams = ret
+            else:
+                reval, fparams, reval2, fparams2 = ret
+
             if onsphere:
                 T, P, _, field = fparams
+                e_t = np.zeros((3,) + P.shape)
+                e_t[0, :, :] = np.cos(T)*np.cos(P)
+                e_t[1, :, :] = np.cos(T)*np.sin(P)
+                e_t[2, :, :] = -np.sin(T)
+
+                # phi unit vec
+                e_p = np.zeros((3,) + P.shape)
+                e_p[0, :, :] = -np.sin(P)
+                e_p[1, :, :] = np.cos(P)
+
                 # TODO project Ex, Ey onto etheta, ephi?
                 Ex = field[:, :, 0].real
                 Ey = field[:, :, 1].real
-                f = np.hypot(Ex, Ey)*0.1
-                Ex /= f
-                Ey /= f
                 fig, ax = plt.subplots()
                 ax.quiver(np.degrees(T*np.cos(P)), np.degrees(T*np.sin(P)),
                           Ex.real, Ey.real)
@@ -110,20 +125,45 @@ class TestAnalytic(Base):
                 ax.set_ylabel('ty [deg]')
             else:
                 X, Y, _, field = fparams
+                tx = np.degrees(np.arctan2(X, reval))
+                ty = np.degrees(np.arctan2(Y, reval))
 
-                Ex = field[:, :, 0].real
-                Ey = field[:, :, 1].real
-                f = np.hypot(Ex, Ey)*0.1
-                Ex /= f
-                Ey /= f
+                Ex = field[:, :, 0]
+                Ey = field[:, :, 1]
                 fig, ax = plt.subplots()
-                ax.quiver(X, Y, Ex.real, Ey.real)
-                ax.set_xlabel('x')
-                ax.set_ylabel('y')
-            ax.set_title('Ex, Ey:  k=%g, orientation of dip. moment : '
-                         '%s-axis' % (k, align))
+                ax.quiver(tx, ty, Ex.real, Ey.real)
+                ax.set_xlabel('tx')
+                ax.set_ylabel('ty')
+                ax.set_title('Ex, Ey:  k=%g, orientation of dip. moment : '
+                             '%s-axis' % (k, align))
+
+            polangles = np.linspace(0, 180, 64)
+            phis = np.radians(polangles)
+            Is = np.array([(abs(np.cos(phi)*Ex +
+                                np.sin(phi)*Ey)**2).sum() for phi in phis])
+            Is /= Is.max()
+            fig, ax = plt.subplots()
+            ax.plot(polangles, Is, '-', label='pol farfield')
+
+            if rdisk is not None:
+                field = fparams2[-1]
+                Ex, Ey = field[:, :, 0], field[:, :, 1]
+                Is = np.array([(abs(np.cos(phi)*Ex +
+                                    np.sin(phi)*Ey)**2).sum() for phi in phis])
+                Is /= Is.max()
+                ax.plot(polangles, Is, '-', label='pol nearfield')
+            ax.legend(fontsize=8)
+
+    def test_single_dp_pol(self):
+        """
+        polarization in the far-field of a single oscillating dipole
+        """
+        self._polarization_main(ndip=1, k=0.08)
         self.show()
 
+        self.show()
+
+    @pytest.mark.xfail
     def test_single_anim(self):
         """
         animation of an oscillating dipole in the xy-plane
@@ -267,9 +307,8 @@ class TestAnalytic(Base):
         k = 1.
         La = 2*np.pi/k
         ndip = 2
-        thetamax = 90.
 
-        T, P, r = gen_r(thetamax, ngrid, onsphere=True, reval=500.)
+        T, P, r = gen_r(ngrid, onsphere=True, reval=500., thetamax=90.)
 
         pdisk = np.zeros((ndip, 3))
         pdisk[:, 2] = 1.
@@ -295,9 +334,8 @@ class TestAnalytic(Base):
         k = 1.
         La = 2*np.pi/k
         ndip = 2
-        thetamax = 90.
         reval = 1000*La
-        T, P, r = gen_r(thetamax, ngrid, onsphere=True, reval=reval)
+        T, P, r = gen_r(ngrid, onsphere=True, reval=reval, thetamax=90.)
 
         pdisk = np.zeros((ndip, 3))
         pdisk[:, 2] = 1.
