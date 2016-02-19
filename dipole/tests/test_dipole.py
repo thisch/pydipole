@@ -4,6 +4,7 @@ import cmath
 import logging
 import numpy as np
 import pytest
+import matplotlib.pyplot as plt
 
 from ..field import dipole_e_ff
 from ..field import dipole_general
@@ -30,7 +31,8 @@ def main(test, diameter, ndip, k=0.08, ngrid=100, thetamax=45.,
 
     for kcur in k:
         LG.info('kcur %g', kcur)
-        dipole_phis = np.random.rand(ndip) * 2*np.pi
+        phases = np.random.rand(ndip) * 2*np.pi
+
         pdisk = 2.*(np.random.rand(ndip, 3) - .5)  # dipole moments
         if aligned_dipoles:
             pdisk = np.zeros((ndip, 3))
@@ -47,10 +49,7 @@ def main(test, diameter, ndip, k=0.08, ngrid=100, thetamax=45.,
         if ndip == 1:
             rdip[:, :] = 0.  # dipole at the origin
         # ax.plot(rdip[:, 0], rdip[:, 1], 'x', label='k=%g' % kcur)
-
-        phases = np.r_[dipole_phis]
-        t0 = 0
-        tot += dipole_e_ff(rparams[-1], pdisk, rdip, phases, kcur, t0)
+        tot += dipole_e_ff(rparams[-1], pdisk, rdip, phases, kcur, t=0)
 
     return rparams + (tot,)
 
@@ -80,7 +79,6 @@ class TestAnalytic(Base):
             else:
                 X, Y, _, field = fparams
                 self._plot_intens(field=field, XY=(X, Y))
-            import matplotlib.pyplot as plt
             ax = plt.gca()
             ax.set_title('k=%g, dipole orientation: %s-axis' % (k, align))
         self.show()
