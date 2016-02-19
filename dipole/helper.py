@@ -34,18 +34,21 @@ def unit_vectors(thetamax=7.5, ngrid=32):
     return P, T, (e_r, e_t, e_p)
 
 
-def gen_r(thetamax, ngrid, reval, onsphere):
+def gen_r(ngrid, reval, onsphere, thetamax=None, rmax=None):
     # TODO generalize this function
 
     r = np.empty((ngrid, ngrid, 3))
     if onsphere:
+        assert thetamax is not None
         P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetamax,
                                              ngrid=ngrid)
         r[:, :, 0] = reval * e_r[0, :, :]
         r[:, :, 1] = reval * e_r[1, :, :]
         r[:, :, 2] = reval * e_r[2, :, :]
     else:
-        rmax = np.tan(np.radians(thetamax)) * reval
+        if thetamax is not None:
+            rmax = np.tan(np.radians(thetamax)) * reval
+        assert rmax is not None
         LG.info(" %s deg", np.degrees(cmath.phase(reval + 1j*np.sqrt(2)*rmax)))
         rng = np.linspace(-rmax, rmax, ngrid)
         X, Y = np.meshgrid(rng, rng)
