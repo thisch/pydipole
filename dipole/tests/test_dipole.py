@@ -15,10 +15,10 @@ LG = logging.getLogger('dip')
 
 def main(test, ndip, k=0.08, ngrid=100, thetamax=45.,
          rdisk=None, aligned_dipoles=False, align_axis='z', onsphere=True,
-         plot=True):
+         s=None, plot=True):
     Lam = 2*np.pi/k
     reval = 1000*Lam
-    reval2 = 0.5*Lam
+    reval2 = 5.*Lam
     LG.info('#### SETTINGS: #dips=%d, k=%g, reval=%g', ndip, k, reval)
 
     rparams = gen_r(ngrid, reval=reval, onsphere=onsphere, thetamax=thetamax)
@@ -26,7 +26,12 @@ def main(test, ndip, k=0.08, ngrid=100, thetamax=45.,
         rparams2 = gen_r(ngrid, reval=reval2, onsphere=False,
                          rmax=rdisk*1.2)
 
-    pdisk = 2.*(np.random.rand(ndip, 3) - .5)  # dipole moments
+    if s is not None:
+        rand = s.rand
+    else:
+        rand = np.random.rand
+
+    pdisk = 2.*(rand(ndip, 3) - .5)  # dipole moments
     if aligned_dipoles:
         if align_axis == 'xy':
             pdisk[:, 2] = 0.
@@ -43,10 +48,10 @@ def main(test, ndip, k=0.08, ngrid=100, thetamax=45.,
         rdip = np.zeros((ndip, 3))
         phases = np.zeros(ndip)
     else:
-        rdip = (np.random.rand(ndip, 3) - .5)*2*rdisk  # dipol aufpunkte
+        rdip = (rand(ndip, 3) - .5)*2*rdisk  # dipol aufpunkte
         # LG.info("rdip/rdisk %s", rdip[0,:]/rdisk)
         rdip[:, 2] = 0.  # all dipoles lay in the xy-plane
-        phases = np.random.rand(ndip) * 2*np.pi
+        phases = rand(ndip) * 2*np.pi
 
         # ax.plot(rdip[:, 0], rdip[:, 1], 'x', label='k=%g' % kcur)
     tot = dipole_e_ff(rparams[-1], pdisk, rdip, phases, k, t=0)
@@ -86,7 +91,7 @@ class TestAnalytic(Base):
             ax.set_title('k=%g, dipole orientation: %s-axis' % (k, align))
         self.show()
 
-    def _polarization_main(self, ndip, onsphere=False, k=1., rdisk=None,
+    def _polarization_main(self, ndip, onsphere=False, k=1., rdisk=None, s=None,
                            alignments=None):
         if not onsphere:
             thetamax = 14
@@ -96,7 +101,7 @@ class TestAnalytic(Base):
             alignments = 'xyz'
         for align in alignments:
             ret = main(self, ndip=ndip, aligned_dipoles=True,
-                       rdisk=rdisk, thetamax=thetamax, align_axis=align,
+                       rdisk=rdisk, thetamax=thetamax, align_axis=align, s=s,
                        onsphere=onsphere, k=k, ngrid=32)
             if rdisk is None:
                 reval, fparams = ret
