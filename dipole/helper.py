@@ -1,4 +1,9 @@
+import logging
+import cmath
+
 import numpy as np
+
+LG = logging.getLogger('pyd.hp')
 
 
 def unit_vectors(thetamax=7.5, ngrid=32):
@@ -27,3 +32,28 @@ def unit_vectors(thetamax=7.5, ngrid=32):
     e_p[1, :, :] = np.cos(P)
 
     return P, T, (e_r, e_t, e_p)
+
+
+def gen_r(thetamax, ngrid, reval, onsphere):
+    # TODO generalize this function
+
+    r = np.empty((ngrid, ngrid, 3))
+    if onsphere:
+        P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetamax,
+                                             ngrid=ngrid)
+        r[:, :, 0] = reval * e_r[0, :, :]
+        r[:, :, 1] = reval * e_r[1, :, :]
+        r[:, :, 2] = reval * e_r[2, :, :]
+    else:
+        rmax = np.tan(np.radians(thetamax)) * reval
+        LG.info(" %s deg", np.degrees(cmath.phase(reval + 1j*np.sqrt(2)*rmax)))
+        rng = np.linspace(-rmax, rmax, ngrid)
+        X, Y = np.meshgrid(rng, rng)
+        r[:, :, 0] = X
+        r[:, :, 1] = Y
+        r[:, :, 2] = reval
+    LG.debug("onsphere: %s\tfirst r vec %s", onsphere, r[0, 0, :])
+    if onsphere:
+        return T, P, r
+    else:
+        return X, Y, r
