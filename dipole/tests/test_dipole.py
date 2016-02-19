@@ -83,6 +83,47 @@ class TestAnalytic(Base):
             ax.set_title('k=%g, dipole orientation: %s-axis' % (k, align))
         self.show()
 
+    def test_single_quiver(self, k=1., onsphere=False):
+        """
+        polarization in the far-field of a single oscillating dipole
+        """
+        if not onsphere:
+            thetamax = 10.
+        else:
+            thetamax = 20.
+        for align in 'xyz':
+            fparams = main(self, diameter=100, ndip=1, aligned_dipoles=True,
+                           thetamax=thetamax, align_axis=align,
+                           onsphere=onsphere, k=k, ngrid=32)
+            if onsphere:
+                T, P, _, field = fparams
+                # TODO project Ex, Ey onto etheta, ephi?
+                Ex = field[:, :, 0].real
+                Ey = field[:, :, 1].real
+                f = np.hypot(Ex, Ey)*0.1
+                Ex /= f
+                Ey /= f
+                fig, ax = plt.subplots()
+                ax.quiver(np.degrees(T*np.cos(P)), np.degrees(T*np.sin(P)),
+                          Ex.real, Ey.real)
+                ax.set_xlabel('tx [deg]')
+                ax.set_ylabel('ty [deg]')
+            else:
+                X, Y, _, field = fparams
+
+                Ex = field[:, :, 0].real
+                Ey = field[:, :, 1].real
+                f = np.hypot(Ex, Ey)*0.1
+                Ex /= f
+                Ey /= f
+                fig, ax = plt.subplots()
+                ax.quiver(X, Y, Ex.real, Ey.real)
+                ax.set_xlabel('x')
+                ax.set_ylabel('y')
+            ax.set_title('Ex, Ey:  k=%g, orientation of dip. moment : '
+                         '%s-axis' % (k, align))
+        self.show()
+
     def test_single_anim(self):
         """
         animation of an oscillating dipole in the xy-plane
