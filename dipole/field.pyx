@@ -151,7 +151,7 @@ def dipole_general(np.ndarray[double_t, ndim=3] r,
         # here we compute the time average of the poynting vector for
         # time-harmonic fields. (see wikipedia poynting vec)
         return 0.5*np.cross(Eresvec, Hresvec.conjugate()).real
-    if poyntingstatic:
+    elif poyntingstatic:
         # this is the expression for the poynting vector at time t assuming
         # time-harmonic fields. (see wikipedia poynting vec)
         return (0.5*np.cross(Eresvec,
