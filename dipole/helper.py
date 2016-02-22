@@ -34,17 +34,22 @@ def unit_vectors(thetamax=7.5, ngrid=32):
     return P, T, (e_r, e_t, e_p)
 
 
-def gen_r(ngrid, reval, onsphere, thetamax=None, rmax=None):
-    # TODO generalize this function
-
-    r = np.empty((ngrid, ngrid, 3))
+def gen_r(ngrid, reval, onsphere, thetamax=None, rmax=None, xslice=False):
+    nfirst = 1 if xslice else ngrid
+    r = np.empty((nfirst, ngrid, 3))
     if onsphere:
         assert thetamax is not None
-        P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetamax,
-                                             ngrid=ngrid)
-        r[:, :, 0] = reval * e_r[0, :, :]
-        r[:, :, 1] = reval * e_r[1, :, :]
-        r[:, :, 2] = reval * e_r[2, :, :]
+        if xslice:
+            tlsp = np.radians(np.linspace(-thetamax, thetamax, ngrid))
+            r[0, :, 0] = reval * np.sin(tlsp)
+            r[0, :, 1] = 0
+            r[0, :, 2] = reval * np.cos(tlsp)
+        else:
+            P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetamax,
+                                                 ngrid=ngrid)
+            r[:, :, 0] = reval * e_r[0, :, :]
+            r[:, :, 1] = reval * e_r[1, :, :]
+            r[:, :, 2] = reval * e_r[2, :, :]
     else:
         if thetamax is not None:
             rmax = np.tan(np.radians(thetamax)) * reval
@@ -57,6 +62,11 @@ def gen_r(ngrid, reval, onsphere, thetamax=None, rmax=None):
         r[:, :, 2] = reval
     LG.debug("onsphere: %s\tfirst r vec %s", onsphere, r[0, 0, :])
     if onsphere:
-        return T, P, r
+        if xslice:
+            return tlsp, r
+        else:
+            return T, P, r
     else:
+        if xslice:
+            raise NotImplementedError
         return X, Y, r
