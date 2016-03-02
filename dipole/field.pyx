@@ -16,6 +16,14 @@ import scipy.constants.constants as co
 
 
 cdef extern from "cpp/field.hpp":
+    cdef vector[vector[double_t]] dipole_radiant_intensity_wrapper(
+        vector[vector[double_t]] T,
+        vector[vector[double_t]] P,
+        vector[vector[double_t]] p,
+        vector[vector[double_t]] r,
+        vector[double_t] phases,
+        double_t k)
+
     # TODO bool calc_H
     cdef vector[vector[vector[complex_t]]] farfield_dipole_wrapper(
         vector[vector[vector[double_t]]] r,
@@ -86,6 +94,56 @@ def dipole_e_ff(np.ndarray[double_t, ndim=3] r,
             for kidx in range(aa[i][j].size()):
                 # print("aa[%d, %d, %d] = %s " % (i, j, kidx, aa[i][j][kidx]))
                 resvec[i, j, kidx] = aa[i][j][kidx]
+    return resvec
+
+
+def dipole_radiant_intensity(
+        np.ndarray[double_t, ndim=2] T,
+        np.ndarray[double_t, ndim=2] P,
+        np.ndarray[double_t, ndim=2] p,
+        np.ndarray[double_t, ndim=2] r,
+        np.ndarray[double_t, ndim=1] phases,
+        double_t k):
+
+    cdef r0 = T.shape[0]
+    cdef r1 = T.shape[1]
+
+    cdef vector[vector[double_t]] aa
+    cdef vector[vector[double_t]] Tvec
+    cdef vector[vector[double_t]] Pvec
+    cdef vector[vector[double_t]] pvec
+    cdef vector[vector[double_t]] rvec
+    cdef vector[double_t] phases_vec
+
+    # better way to initialize all my vectors??
+    for tmpvec, tmp in [(Tvec, T), (Pvec, P)]:
+        tmpvec.reserve(r0)
+        for i in range(r0):
+            tmpvec.push_back(vector[double_t]())
+            tmpvec[i].reserve(r1)
+            for j in range(r1):
+                tmpvec[i][j].push_back(tmp[i,j])
+
+
+    for tmpvec, tmp in [(pvec, p), (rvec, r)]:
+        tmpvec.reserve(tmp.shape[0])
+        for i in range(tmp.shape[0]):
+            tmpvec.push_back(vector[double_t]())
+            tmpvec[i].reserve(tmp.shape[1])
+            for j in range(tmp.shape[1]):
+                tmpvec[i].push_back(tmp[i][j])
+
+    phases_vec.reserve(phases.shape[0])
+    for i in range(phases.shape[0]):
+        phases_vec.push_back(phases[i])
+
+    aa = dipole_radiant_intensity_wrapper(Tvec, Pvec, pvec, rvec, phases_vec, k)
+    resvec = np.empty([aa.size(), aa[0].size()], dtype='complex128')
+
+    for i in range(aa.size()):
+        for j in range(aa[i].size()):
+            # print("aa[%d, %d, %d] = %s " % (i, j, kidx, aa[i][j][kidx]))
+            resvec[i, j] = aa[i][j]
     return resvec
 
 

@@ -10,10 +10,92 @@
 using namespace std;
 
 typedef boost::multi_array<complex<double>, 3> restype;
+typedef boost::multi_array<double, 2> ffrestype;
 
-static  double c = 299792458.;
-static  double mu0 = 4*M_PI*1e-7;
-static  double eps0 = 1./(mu0*c*c);
+
+static double c = 299792458.;
+static double mu0 = 4*M_PI*1e-7;
+static double eps0 = 1./(mu0*c*c);
+static double Z = mu0*c;
+
+
+ffrestype dipole_radiant_intensity(boost::multi_array<double, 2>& T,
+                                   boost::multi_array<double, 2>& P,
+                                   boost::multi_array<double, 2>& p,
+                                   boost::multi_array<double, 2>& R,
+                                   std::vector<double>& phases, //1d
+                                   double k)
+{
+    // computes the radiant intensity (radiant flux per solid angle) of a
+    // set of oscillating dipoles.
+
+    // Note: we use the following time dependence of the phasors: exp(-i*w*t)
+
+    // Parameters
+    // ----------
+    // T: real NxM matrix (observation thetas)
+    // P: real NxM matrix (observation phis)
+    // p: real Lx3 matrix
+    // R: real Lx3 matrix
+    // phases: real length L vector
+    // k: real
+    //    wavevector(scalar)
+    // res: NxM real array
+    //    radiant intensity
+
+    const int N = T.shape()[0];
+    const int M = T.shape()[1];
+    const int L = p.shape()[0]; // number of dipoles
+
+    ffrestype res(boost::extents[N][M]);
+
+    const double prefac = k*k*k*k/(32*M_PI*M_PI*eps0*eps0*Z);
+
+    #pragma omp parallel for //shared(res, r, R, p)
+    for (int i=0; i < N; i++) {
+        for (int j=0; j < M; j++) {
+            // todo move this out of the c++code ??
+            const vector<double> r = {
+                sin(T[i][j])*cos(P[i][j]),
+                sin(T[i][j])*sin(P[i][j]),
+                cos(T[i][j])};
+
+            vector<complex<double>> tmpres(3, 0);
+            for (int d=0; d < L; ++d) {
+                vector<double> p_vec(3);
+                double rinp = 0.;
+                for (int g=0; g < 3; ++g) {
+                    p_vec[g] = p[d][g];
+                    rinp += r[g]*p_vec[g];
+                }
+                const double krp = k*rinp;
+                // todo long double?
+                auto expfac = exp(complex<double>(0, krp - (phases[d])));
+
+                vector<double> r_cross_p(3);
+                vector<double> rpcp(3);
+
+                // r x p
+                r_cross_p[0] = r[1]*p_vec[2] - r[2]*p_vec[1];
+                r_cross_p[1] = -r[0]*p_vec[2] + r[2]*p_vec[0];
+                r_cross_p[2] = r[0]*p_vec[1] - r[1]*p_vec[0];
+
+                // (r x p) x r
+                tmpres[0] += r_cross_p[1]*r[2] - r_cross_p[2]*r[1];
+                tmpres[1] += -r_cross_p[0]*r[2] + r_cross_p[2]*r[0];
+                tmpres[2] += r_cross_p[0]*r[1] - r_cross_p[1]*r[0];
+            }
+            complex<double> rint = 0.;
+            for (int l=0; l < 3; l++) {
+                rint += tmpres[l]*conj(tmpres[l]);
+            }
+            res[i][j] = prefac*real(rint);
+        }
+    }
+    return res;
+}
+
+
 
 
 restype dipole_field_ff(boost::multi_array<double, 3>& r,
@@ -42,7 +124,7 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
 
     int N = r.shape()[0];
     int M = r.shape()[1];
-    int ndip = p.shape()[0]; // number of dipoles
+    int L = p.shape()[0]; // number of dipoles
 
     restype res(boost::extents[r.shape()[0]][r.shape()[1]][3]);
 
@@ -60,7 +142,7 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
                 res[i][j][l] = 0.;
             }
             // cout << (r[i][j] - R[0]) << endl;
-            for (int d=0; d < ndip; ++d) {
+            for (int d=0; d < L; ++d) {
                 double magrprime = 0.;
                 vector<double> rprime_vec(3);
                 vector<double> p_vec(3);
@@ -125,7 +207,7 @@ restype dipole_field_general(boost::multi_array<double, 3>& r,
 
     int N = r.shape()[0];
     int M = r.shape()[1];
-    int ndip = p.shape()[0]; // number of dipoles
+    int L = p.shape()[0]; // number of dipoles
 
     double prefac = calc_H ? k*k*c/(4*M_PI) : 1./(4*M_PI*eps0);
 
@@ -147,7 +229,7 @@ restype dipole_field_general(boost::multi_array<double, 3>& r,
 
             if (calc_H) {
                 // H FIELD
-                for (int d=0; d < ndip; ++d) {
+                for (int d=0; d < L; ++d) {
                     double magrprime = 0.;
                     vector<double> rprime_vec(3);
                     vector<double> p_vec(3);
@@ -176,7 +258,7 @@ restype dipole_field_general(boost::multi_array<double, 3>& r,
             }
             else {
                 // E FIELD
-                for (int d=0; d < ndip; ++d) {
+                for (int d=0; d < L; ++d) {
                     double magrprime = 0.;
                     vector<double> rprime_vec(3);
                     vector<double> p_vec(3);
@@ -228,6 +310,57 @@ restype dipole_field_general(boost::multi_array<double, 3>& r,
         }
     }
     return res;
+}
+
+
+vector<vector<double>>
+dipole_radiant_intensity_wrapper(vector<vector<double>> T,
+                                 vector<vector<double>> P,
+                                 vector<vector<double>> p,
+                                 vector<vector<double>> R,
+                                 vector<double> phases,
+                                 double k) {
+    size_t N1 = T.size();
+    size_t N2 = T[0].size();
+
+    // THETA
+    auto T_ma = boost::multi_array<double, 2>(boost::extents[N1][N2]);
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            T_ma[i][j] = T[i][j];
+
+    // PHI
+    auto P_ma = boost::multi_array<double, 2>(boost::extents[N1][N2]);
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            P_ma[i][j] = P[i][j];
+
+    // dipole moments
+    N1 = p.size(); //
+    N2 = p[0].size();
+    auto p_ma = boost::multi_array<double, 2>(boost::extents[N1][N2]);
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            p_ma[i][j] = p[i][j];
+
+    // dipole positions
+    N1 = R.size();
+    N2 = R[0].size();
+    auto R_ma = boost::multi_array<double, 2>(boost::extents[N1][N2]);
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            R_ma[i][j] = R[i][j];
+
+    // main
+    ffrestype myres = dipole_radiant_intensity(T_ma, P_ma, p_ma, R_ma, phases, k);
+
+    N1 = myres.shape()[0];
+    N2 = myres.shape()[1];
+    auto myres_vec = vector<vector<double>>(N1, vector<double>(N2));
+    for (size_t i=0; i<N1; ++i)
+        for (size_t j=0; j<N2; ++j)
+            myres_vec[i][j] = myres[i][j];
+    return myres_vec;
 }
 
 
