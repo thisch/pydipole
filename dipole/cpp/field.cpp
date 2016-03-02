@@ -70,7 +70,7 @@ ffrestype dipole_radiant_intensity(boost::multi_array<double, 2>& T,
                 }
                 const double krp = k*rinp;
                 // todo long double?
-                auto expfac = exp(complex<double>(0, krp - (phases[d])));
+                auto expfac = exp(complex<double>(0, -(krp + phases[d])));
 
                 vector<double> r_cross_p(3);
                 vector<double> rpcp(3);
