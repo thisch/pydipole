@@ -115,30 +115,61 @@ def dipole_radiant_intensity(
     cdef vector[vector[double_t]] rvec
     cdef vector[double_t] phases_vec
 
-    # better way to initialize all my vectors??
-    for tmpvec, tmp in [(Tvec, T), (Pvec, P)]:
-        tmpvec.reserve(r0)
-        for i in range(r0):
-            tmpvec.push_back(vector[double_t]())
-            tmpvec[i].reserve(r1)
-            for j in range(r1):
-                tmpvec[i][j].push_back(tmp[i,j])
+    # # better way to initialize all my vectors??
+    # for tmpvec, tmp in [(Tvec, T), (Pvec, P)]:
+    #     print(type(tmpvec), type(Tvec), type(phases_vec))
+    #     tmpvec.reserve(tmp.shape[0])
+    #     for i in range(tmp.shape[0]):
+    #         tmpvec.push_back(vector[double_t]())
+    #         tmpvec[i].reserve(tmp.shape[1])
+    #         for j in range(tmp.shape[1]):
+    #             tmpvec[i][j].push_back(tmp[i][j])
+
+    if True:
+        Tvec.reserve(T.shape[0])
+        for i in range(T.shape[0]):
+            Tvec.push_back(vector[double_t]())
+            Tvec[i].reserve(T.shape[1])
+            for j in range(T.shape[1]):
+                Tvec[i].push_back(T[i][j])
+
+        Pvec.reserve(P.shape[0])
+        for i in range(P.shape[0]):
+            Pvec.push_back(vector[double_t]())
+            Pvec[i].reserve(P.shape[1])
+            for j in range(P.shape[1]):
+                Pvec[i].push_back(P[i][j])
 
 
-    for tmpvec, tmp in [(pvec, p), (rvec, r)]:
-        tmpvec.reserve(tmp.shape[0])
-        for i in range(tmp.shape[0]):
-            tmpvec.push_back(vector[double_t]())
-            tmpvec[i].reserve(tmp.shape[1])
-            for j in range(tmp.shape[1]):
-                tmpvec[i].push_back(tmp[i][j])
+    # for tmpvec, tmp in [(pvec, p), (rvec, r)]:
+    #     tmpvec.reserve(tmp.shape[0])
+    #     for i in range(tmp.shape[0]):
+    #         tmpvec.push_back(vector[double_t]())
+    #         tmpvec[i].reserve(tmp.shape[1])
+    #         for j in range(tmp.shape[1]):
+    #             tmpvec[i].push_back(tmp[i][j])
+
+    if True:
+        pvec.reserve(p.shape[0])
+        for i in range(p.shape[0]):
+            pvec.push_back(vector[double_t]())
+            pvec[i].reserve(p.shape[1])
+            for j in range(p.shape[1]):
+                pvec[i].push_back(p[i][j])
+
+        rvec.reserve(r.shape[0])
+        for i in range(r.shape[0]):
+            rvec.push_back(vector[double_t]())
+            rvec[i].reserve(r.shape[1])
+            for j in range(r.shape[1]):
+                rvec[i].push_back(r[i][j])
 
     phases_vec.reserve(phases.shape[0])
     for i in range(phases.shape[0]):
         phases_vec.push_back(phases[i])
 
     aa = dipole_radiant_intensity_wrapper(Tvec, Pvec, pvec, rvec, phases_vec, k)
-    resvec = np.empty([aa.size(), aa[0].size()], dtype='complex128')
+    resvec = np.empty([aa.size(), aa[0].size()], dtype='float64')
 
     for i in range(aa.size()):
         for j in range(aa[i].size()):
