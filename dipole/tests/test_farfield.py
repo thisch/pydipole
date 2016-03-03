@@ -73,6 +73,33 @@ class TestFarField(Base):
 
         self.show()
 
+    def test_1_varyreval(self):
+        k = 0.08
+        Lam = 2*np.pi/k
+        ngrid = 256
+        ndip = 1
+        pdisk = np.zeros((ndip, 3))
+        pdisk[0, 2] = -1
+        rdip = np.zeros((ndip, 3))
+        phases = np.array([0.])
+
+        # TODO test dipole_e_ff and dipole_general
+        reval = 1e6*Lam
+        T, P, r = gen_r(ngrid, onsphere=True, reval=reval, thetamax=90.)
+        with Timer(self.log.debug, 'dp radint took: %f ms'):
+            rint6 = dipole_radiant_intensity(T, P, pdisk, rdip, phases, k)
+        plot(rint6, T, P, 'rint = r^2*smean [revfac 1e6]')
+
+        reval = 1e7*Lam
+        T, P, r = gen_r(ngrid, onsphere=True, reval=reval, thetamax=90.)
+        with Timer(self.log.debug, 'dp radint took: %f ms'):
+            rint7 = dipole_radiant_intensity(T, P, pdisk, rdip, phases, k)
+        plot(rint7, T, P, 'rint = r^2*smean [revfac 1e7]')
+
+        nt.assert_allclose(rint6, rint7, atol=2e4, rtol=0)
+
+        self.show()
+
     def test_2(self):
         """ differnt dipole configuration than in 1
         """
