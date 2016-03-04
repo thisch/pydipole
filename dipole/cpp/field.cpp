@@ -59,36 +59,34 @@ ffrestype dipole_radiant_intensity(boost::multi_array<double, 2>& T,
                 sin(T[i][j])*sin(P[i][j]),
                 cos(T[i][j])};
 
-            // double r0 = r[0];
-            // double r1 = r[1];
-            // double r2 = r[2];
-            // cout << "RI: 0: " << r0 << " 1: " << r1 << " 2: "
-            //      << r2 << " NORM " << r0*r0+r1*r1+r2*r2 << endl;
-
-            vector<complex<double>> tmpres(3, 0);
+            // TODO sum over dipoles
+            // p tot
+            vector<complex<double>> p_vec(3, 0);
             for (int d=0; d < L; ++d) {
-                vector<double> p_vec(3);
                 double rinR = 0.;
                 for (int g=0; g < 3; ++g) {
-                    p_vec[g] = p[d][g];
                     rinR += r[g]*R[d][g];
                 }
-                const double krR = k*rinR;
-                auto expfac = exp(complex<double>(0, -(krR + phases[d])));
-
-                // r x p
-                vector<double> r_cross_p = {
-                     r[1]*p_vec[2] - r[2]*p_vec[1],
-                    -r[0]*p_vec[2] + r[2]*p_vec[0],
-                     r[0]*p_vec[1] - r[1]*p_vec[0]};
-                // cout << "RI RCP: 0: " << r_cross_p[0] << " 1: " << r_cross_p[1] << " 2: "
-                //      << r_cross_p[2] << endl;
-
-                // (r x p) x r
-                tmpres[0] += (r_cross_p[1]*r[2] - r_cross_p[2]*r[1])*expfac;
-                tmpres[1] += (-r_cross_p[0]*r[2] + r_cross_p[2]*r[0])*expfac;
-                tmpres[2] += (r_cross_p[0]*r[1] - r_cross_p[1]*r[0])*expfac;
+                auto expfac = exp(complex<double>(0, -(k*rinR + phases[d])));
+                for (int g=0; g < 3; ++g) {
+                    p_vec[g] += p[d][g]*expfac;
+                }
             }
+
+            // r x p
+            const vector<complex<double>> r_cross_p = {
+                r[1]*p_vec[2] - r[2]*p_vec[1],
+                -r[0]*p_vec[2] + r[2]*p_vec[0],
+                r[0]*p_vec[1] - r[1]*p_vec[0]
+            };
+
+            // (r x p) x r
+            const vector<complex<double>> tmpres = {
+                r_cross_p[1]*r[2] - r_cross_p[2]*r[1],
+                -r_cross_p[0]*r[2] + r_cross_p[2]*r[0],
+                r_cross_p[0]*r[1] - r_cross_p[1]*r[0]
+            };
+
             complex<double> rint = 0.;
             for (int l=0; l < 3; l++) {
                 rint += tmpres[l]*conj(tmpres[l]);
