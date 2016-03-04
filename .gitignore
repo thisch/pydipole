@@ -5,6 +5,9 @@
 *.so
 *.html
 *.c
+*.aux
+*.log
+*.pdf
 /build/
 /dipole/field.cpp
 /.cache/

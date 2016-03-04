@@ -1,0 +1,37 @@
+% execute it with pdflatex -shell-escape equations.tex
+\documentclass[multi={mymath},border=1pt,convert={density=300,outext=.png}]{standalone}
+\usepackage{amsmath}
+\newenvironment{mymath}{$\displaystyle}{$}
+\usepackage{xcolor}
+\begin{document}
+
+\pagecolor[RGB]{255,255,255} % white
+
+% \newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\norm}[1]{\left|#1\right|}
+
+\begin{mymath}
+\mathbf{E}(\mathbf{r}, t) = \sum_{n=1}^{N}\frac{1}{4\pi\epsilon_{0}}\left\{ \frac{k^{2}}{r'}(\mathbf{\hat{r}'} \times \mathbf{p}_{n}) \times \mathbf{\hat{r}'} + \frac{1}{r'^{3}}(1-ikr')\left[3\mathbf{\hat{r}'}(\mathbf{\hat{r}'}\cdot\mathbf{p}) - \mathbf{p}\right]\right\}\,e^{ikr' - i(\omega t + \varphi_{n})}
+\end{mymath}
+
+% definitions
+\begin{mymath}
+r' := |\mathbf{r} - \mathbf{a}_{n}|\quad\mathbf{\hat{r}'} := \frac{\mathbf{r} - \mathbf{a}_{n}}{|\mathbf{r} - \mathbf{a}_{n}|}
+\end{mymath}
+
+% farfield of electric field
+\begin{mymath}
+\mathbf{E}_{\infty}(\mathbf{r}, t) = \sum_{n=1}^{N}\frac{k^{2}}{4\pi\epsilon_{0}r} (\mathbf{\hat{r}} \times \mathbf{p}_{n}) \times \mathbf{\hat{r}}\,e^{ik(r - \mathbf{\hat{r}}\cdot\mathbf{a}_{n}) - i(\omega t + \varphi_{n})}
+\end{mymath}
+
+% radiant intensity (radiant flux per unit solid angle)
+\begin{mymath}
+  \frac{\partial \overline{P}}{\partial \Omega} = r^{2} |\langle S_{r} \rangle| = \frac{r^{2}}{2Z} \norm{\mathbf{E}_{\infty}}^{2} = \frac{k^{4}}{32\pi^{2}\epsilon_{0}^{2}Z} \norm{\sum_{n=1}^{N} (\mathbf{\hat{r}} \times \mathbf{p}_{n}) \times \mathbf{\hat{r}}\, e^{- i(k\mathbf{\hat{r}}\cdot\mathbf{a}_{n} + \varphi_{n})}}^{2}
+\end{mymath}
+
+\end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% compile-command: "pdflatex -shell-escape equations.tex"
+%%% End:
