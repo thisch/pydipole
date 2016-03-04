@@ -156,8 +156,13 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
                     magrprime += r[i][j][g]*r[i][j][g];
                 }
                 magrprime = sqrt(magrprime);
+                for (int g=0; g < 3; ++g) {
+                    rprime_vec[g] /= magrprime;
+                }
+
                 const double krinp = k*rinp/magrprime;
                 auto expfac = exp(complex<double>(0, (k*magrprime - krinp) - phases[d]))/(4*M_PI*eps0);
+                auto efac = k*k/magrprime;
 
                 vector<double> rprime_cross_p(3);
                 vector<double> rpcp(3);
