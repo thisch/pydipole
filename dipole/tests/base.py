@@ -14,8 +14,9 @@ class Base:
         # TODO support for fixtures (convert fixtures to strs)
         self._testMethodName = method.__name__
 
-    def _plot_intens(self, T=None, P=None, field=None, title=None, XY=None, ax=None):
-        intens = np.sum(np.abs(field)**2, axis=2)
+    def _plot_intens(self, T=None, P=None, field=None, intens=None, title=None, XY=None, ax=None):
+        if intens is None:
+            intens = np.sum(np.abs(field)**2, axis=2)
         if ax is None:
             fig, ax = plt.subplots()
         # ax = fig.gca(projection='3d')
