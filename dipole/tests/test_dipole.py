@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from ..field import dipole_e_ff
 from ..field import dipole_general
+from ..field import dipole_radiant_intensity
 from ..helper import gen_r
 from .base import Base
 
@@ -54,7 +55,15 @@ def main(test, ndip, k=0.08, ngrid=100, thetamax=45.,
         phases = rand(ndip) * 2*np.pi
 
         # ax.plot(rdip[:, 0], rdip[:, 1], 'x', label='k=%g' % kcur)
-    tot = dipole_e_ff(rparams[-1], pdisk, rdip, phases, k, t=0)
+    if onsphere:
+        intens = dipole_radiant_intensity(rparams[0],
+                                          rparams[1],
+                                          pdisk, rdip, phases, k)
+    else:
+        intens = np.linalg.norm(
+            dipole_e_ff(rparams[-1], pdisk, rdip, phases, k, t=0),
+            axis=2)**2
+
     if rdisk is not None:
         tot2, _ = dipole_general(rparams2[-1], pdisk, rdip,
                                  phases, k, t=0)
@@ -78,15 +87,15 @@ class TestAnalytic(Base):
         else:
             thetamax = 90.
         for align in 'xyz':
-            reval, fparams = main(self, ndip=1, aligned_dipoles=True,
+            reval, iparams = main(self, ndip=1, aligned_dipoles=True,
                                   thetamax=thetamax, align_axis=align,
                                   onsphere=onsphere, k=k, ngrid=200)
             if onsphere:
-                T, P, _, field = fparams
-                self._plot_intens(T, P, field)
+                T, P, _, intens = iparams
+                self._plot_intens(T, P, intens=intens)
             else:
-                X, Y, _, field = fparams
-                self._plot_intens(field=field, XY=(X, Y))
+                X, Y, _, intens = iparams
+                self._plot_intens(intens=intens, XY=(X, Y))
             ax = plt.gca()
             ax.set_title('k=%g, dipole orientation: %s-axis' % (k, align))
         self.show()
@@ -166,9 +175,17 @@ class TestAnalytic(Base):
         self._polarization_main(ndip=1, k=0.08)
         self.show()
 
+    def test_many_dp_pol(self):
+        """
+        polarization in the far-field of many oscillating dipoles
+        """
+        s = np.random.RandomState(12321)
+        self._polarization_main(ndip=150, k=0.08, rdisk=250,
+                                s=s, alignments='x')
+                                # alignments=['xy'])
         self.show()
 
-    @pytest.mark.xfail
+    # @pytest.mark.xfail
     def test_single_anim(self):
         """
         animation of an oscillating dipole in the xy-plane
