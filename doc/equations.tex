@@ -1,8 +1,10 @@
 % execute it with pdflatex -shell-escape equations.tex
 % see http://tex.stackexchange.com/questions/287481
 \documentclass[multi={mymath},border=1pt,convert={density=300,outext=.png}]{standalone}
-\usepackage{amsmath}
+\usepackage{amsmath, environ}
 \newenvironment{mymath}{$\displaystyle}{$}
+%\newenvironment{mymatharr}{\begin{eqnarray}}{\end{eqnarray}}
+% \NewEnviron{mymath}{\begin{align}\BODY\end{align}}
 \usepackage{xcolor}
 \begin{document}
 
@@ -12,7 +14,7 @@
 \newcommand{\norm}[1]{\left|#1\right|}
 
 \begin{mymath}
-\mathbf{E}(\mathbf{r}, t) = \sum_{n=1}^{N}\frac{1}{4\pi\epsilon_{0}}\left\{ \frac{k^{2}}{r'}(\mathbf{\hat{r}'} \times \mathbf{p}_{n}) \times \mathbf{\hat{r}'} + \frac{1}{r'^{3}}(1-ikr')\left[3\mathbf{\hat{r}'}(\mathbf{\hat{r}'}\cdot\mathbf{p}) - \mathbf{p}\right]\right\}\,e^{ikr' - i(\omega t + \varphi_{n})}
+\mathbf{E}(\mathbf{r}, t) = \sum_{n=1}^{N}\frac{1}{4\pi\epsilon_{0}}\left\{ \frac{k^{2}}{r'}(\mathbf{\hat{r}'} \times \mathbf{p}_{n}) \times \mathbf{\hat{r}'} + \frac{1}{r'^{3}}(1-ikr')\left[3\mathbf{\hat{r}'}(\mathbf{\hat{r}'}\cdot\mathbf{p}_{n}) - \mathbf{p}_{n}\right]\right\}\,e^{ikr' - i(\omega t + \varphi_{n})}
 \end{mymath}
 
 % definitions
@@ -20,10 +22,22 @@
 r' := |\mathbf{r} - \mathbf{a}_{n}|\quad\mathbf{\hat{r}'} := \frac{\mathbf{r} - \mathbf{a}_{n}}{|\mathbf{r} - \mathbf{a}_{n}|}
 \end{mymath}
 
-% farfield of electric field
+% magnetic field
+\begin{mymath}
+\mathbf{H}(\mathbf{r}, t) = \sum_{n=1}^{N}\frac{1}{4\pi c r'} (\mathbf{\hat{r}'} \times \mathbf{p}_{n}) \left (1 - \frac{1}{ikr'}\right) e^{ikr' - i(\omega t + \varphi_{n})}
+\end{mymath}
+
+
+% electric field (far-field)
 \begin{mymath}
 \mathbf{E}_{\infty}(\mathbf{r}, t) = \sum_{n=1}^{N}\frac{k^{2}}{4\pi\epsilon_{0}r} (\mathbf{\hat{r}} \times \mathbf{p}_{n}) \times \mathbf{\hat{r}}\,e^{ik(r - \mathbf{\hat{r}}\cdot\mathbf{a}_{n}) - i(\omega t + \varphi_{n})}
 \end{mymath}
+
+% magnetic field (far-field)
+\begin{mymath}
+\mathbf{H}_\infty(\mathbf{r}, t) = \sum_{n=1}^{N}\frac{1}{4\pi c r'} (\mathbf{\hat{r}'} \times \mathbf{p}_{n}) e^{ikr' - i(\omega t + \varphi_{n})}
+\end{mymath}
+
 
 % radiant intensity (radiant flux per unit solid angle)
 \begin{mymath}
