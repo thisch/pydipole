@@ -3,6 +3,7 @@ import os
 import numpy as np
 import logging
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 
 class Base:
@@ -16,7 +17,7 @@ class Base:
     def _plot_surface(self, T, P, intens, ax=None):
         if ax is None:
             from mpl_toolkits.mplot3d import Axes3D
-            fig, ax = plt.subplots()
+            fig = plt.figure()
             ax = fig.gca(projection='3d')
 
         intnorm = intens/intens.max()
@@ -24,7 +25,7 @@ class Base:
         Y = np.sin(P)*np.sin(T)*intnorm
         Z = np.cos(T)*intnorm
 
-        ax.plot_surface(X, Y, Z)
+        ax.plot_surface(X, Y, Z, facecolors=mpl.cm.rainbow(intnorm))
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
