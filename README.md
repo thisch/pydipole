@@ -9,12 +9,11 @@ electric dipoles in vacuum are given by
 ![](https://github.com/thisch/pydipole/raw/master/doc/equations-0.png)
 ![](https://github.com/thisch/pydipole/raw/master/doc/equations-2.png)
 
-where `p\_n` are the dipole moments and `varphi\_n` are the temporal phases of
+where `p_n` are the dipole moments and `varphi_n` are the temporal phases of
 the oscillating dipoles. The quantities `r'` and `rvechat'` depend on the
-positions of the dipoles `a\_n`,
+positions of the dipoles `a_n`,
 
 ![](https://github.com/thisch/pydipole/raw/master/doc/equations-1.png)
-
 
 The function ``dipole.field.dipole_general`` evaluates the electric and/or
 magnetic field of a set of oscillating dipoles at specified observation
@@ -30,7 +29,7 @@ radiated and is given by ([radiant intensity](https://en.wikipedia.org/wiki/Radi
 
 ![](https://github.com/thisch/pydipole/raw/master/doc/equations-5.png)
 
-See the examples in `examples/\*.py` and the unit tests in `dipole/tests/\*.py` for examples on how to use the mentioned functions.
+See the examples in `examples/*.py` and the unit tests in `dipole/tests/*.py` for examples on how to use the mentioned functions.
 
 ## API
 ```
