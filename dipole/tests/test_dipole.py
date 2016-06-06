@@ -51,38 +51,46 @@ def main(test, ndip, k=0.08, ngrid=100, thetamax=45.,
 
         # ax.plot(rdip[:, 0], rdip[:, 1], 'x', label='k=%g' % kcur)
 
-    if intens:
+    if intens and onsphere:
         intens = dipole_radiant_intensity(rparams[0], rparams[1], pdisk,
                                           rdip, phases, k)
         return reval, rparams + (intens,)
     else:
         field = dipole_e_ff(rparams[-1], pdisk, rdip, phases, k, t=0)
+        if intens:
+            return reval, rparams + (np.linalg.norm(field, axis=2)**2,)
         return reval, rparams + (field,)
 
 
 class TestAnalytic(Base):
 
-    @pytest.mark.parametrize(('k', 'onsphere'),
-                             ([0.01, True],
-                              [0.01, False],
-                              [1., True],
-                              [1., False]))
-    def test_single(self, k, onsphere):
+    @pytest.mark.parametrize(('k', 'onsphere', 'surface'),
+                             ([0.01, True, True],
+                              [0.01, True, False],
+                              [0.01, False, False],
+                              [1., True, False],
+                              [1., False, False]))
+    def test_single(self, k, onsphere, surface):
         """
         single dipole
         """
-        if not onsphere:
-            thetamax = 40.
+        ngrid = 200 if not surface else 400.
+        if onsphere:
+            thetamax = 180. if surface else 90.
         else:
-            thetamax = 90.
+            thetamax = 40.
+
         for align in 'xyz':
             reval, iparams = main(self, ndip=1, aligned_dipoles=True,
                                   thetamax=thetamax, align_axis=align,
                                   intens=True,
-                                  onsphere=onsphere, k=k, ngrid=200)
+                                  onsphere=onsphere, k=k, ngrid=ngrid)
             if onsphere:
                 T, P, _, intens = iparams
-                self._plot_intens(T, P, intens=intens)
+                if surface:
+                    self._plot_surface(T, P, intens=intens)
+                else:
+                    self._plot_intens(T, P, intens=intens)
             else:
                 X, Y, _, intens = iparams
                 self._plot_intens(intens=intens, XY=(X, Y))

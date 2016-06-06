@@ -2,7 +2,6 @@ import pytest
 import os
 import numpy as np
 import logging
-# from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
 
@@ -14,18 +13,27 @@ class Base:
         # TODO support for fixtures (convert fixtures to strs)
         self._testMethodName = method.__name__
 
+    def _plot_surface(self, T, P, intens, ax=None):
+        if ax is None:
+            from mpl_toolkits.mplot3d import Axes3D
+            fig, ax = plt.subplots()
+            ax = fig.gca(projection='3d')
+
+        intnorm = intens/intens.max()
+        X = np.cos(P)*np.sin(T)*intnorm
+        Y = np.sin(P)*np.sin(T)*intnorm
+        Z = np.cos(T)*intnorm
+
+        ax.plot_surface(X, Y, Z)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+
     def _plot_intens(self, T=None, P=None, field=None, intens=None, title=None, XY=None, ax=None):
         if intens is None:
             intens = np.sum(np.abs(field)**2, axis=2)
         if ax is None:
             fig, ax = plt.subplots()
-        # ax = fig.gca(projection='3d')
-
-        # ax.plot_surface(intens*r[:, :, 0],
-        #                 intens*r[:, :, 1],
-        #                 intens*r[:, :, 2])
-        # ax.contourf(np.degrees(T*np.cos(P)), np.degrees(T*np.sin(P)),
-        #             intens)
 
         # ax.imshow(intens)
         if XY is not None:
