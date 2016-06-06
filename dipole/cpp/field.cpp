@@ -143,41 +143,56 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
             }
             // cout << (r[i][j] - R[0]) << endl;
             for (int d=0; d < L; ++d) {
-                double magrprime = 0.;
-                vector<double> rprime_vec(3);
+                double magr = 0.;
+                vector<double> r_vec(3);
                 vector<double> p_vec(3);
 
+                // TODO move magr part one level up
                 double rinp = 0.;
                 for (int g=0; g < 3; ++g) {
                     p_vec[g] = p[d][g];
                     rinp += r[i][j][g]*R[d][g];
-                    rprime_vec[g] = r[i][j][g];
-                    magrprime += r[i][j][g]*r[i][j][g];
+                    r_vec[g] = r[i][j][g];
+                    magr += r[i][j][g]*r[i][j][g];
                 }
-                magrprime = sqrt(magrprime);
+                magr = sqrt(magr);
                 for (int g=0; g < 3; ++g) {
-                    rprime_vec[g] /= magrprime;
+                    r_vec[g] /= magr;
                 }
 
-                const double krinp = k*rinp/magrprime;
-                auto expfac = exp(complex<double>(0, (k*magrprime - krinp) - phases[d]))/(4*M_PI*eps0);
-                auto efac = k*k/magrprime;
+                const double krinp = k*rinp/magr;
+                auto expfac = exp(complex<double>(0, (k*magr - krinp) - phases[d]));
 
-                vector<double> rprime_cross_p(3);
-                vector<double> rpcp(3);
+                if (calc_H) {
+                    // TODO this code is not tested
+                    vector<double> r_cross_p(3);
+                    // r x p  (note r is not a unit vector)
+                    r_cross_p[0] = r_vec[1]*p_vec[2] - r_vec[2]*p_vec[1];
+                    r_cross_p[1] = -r_vec[0]*p_vec[2] + r_vec[2]*p_vec[0];
+                    r_cross_p[2] = r_vec[0]*p_vec[1] - r_vec[1]*p_vec[0];
+                    expfac /= 4*M_PI*c*magr;
+                    for (int l=0; l < 3; l++) {
+                        res[i][j][l] += expfac * r_cross_p[l];
+                    }
+                }
+                else {
+                    auto efac = k*k/magr;
+                    vector<double> r_cross_p(3);
+                    vector<double> rpcp(3);
 
-                // r' x p  (note r' is not a unit vector)
-                rprime_cross_p[0] = rprime_vec[1]*p_vec[2] - rprime_vec[2]*p_vec[1];
-                rprime_cross_p[1] = -rprime_vec[0]*p_vec[2] + rprime_vec[2]*p_vec[0];
-                rprime_cross_p[2] = rprime_vec[0]*p_vec[1] - rprime_vec[1]*p_vec[0];
+                    // r x p  (note r is not a unit vector)
+                    r_cross_p[0] = r_vec[1]*p_vec[2] - r_vec[2]*p_vec[1];
+                    r_cross_p[1] = -r_vec[0]*p_vec[2] + r_vec[2]*p_vec[0];
+                    r_cross_p[2] = r_vec[0]*p_vec[1] - r_vec[1]*p_vec[0];
 
-                // (r' x p) x r'  (note r' is not a unit vector)
-                rpcp[0] = rprime_cross_p[1]*rprime_vec[2] - rprime_cross_p[2]*rprime_vec[1];
-                rpcp[1] = -rprime_cross_p[0]*rprime_vec[2] + rprime_cross_p[2]*rprime_vec[0];
-                rpcp[2] = rprime_cross_p[0]*rprime_vec[1] - rprime_cross_p[1]*rprime_vec[0];
-
-                for (int l=0; l < 3; l++) {
-                    res[i][j][l] += efac * expfac * rpcp[l];
+                    // (r x p) x r  (note r is not a unit vector)
+                    rpcp[0] = r_cross_p[1]*r_vec[2] - r_cross_p[2]*r_vec[1];
+                    rpcp[1] = -r_cross_p[0]*r_vec[2] + r_cross_p[2]*r_vec[0];
+                    rpcp[2] = r_cross_p[0]*r_vec[1] - r_cross_p[1]*r_vec[0];
+                    expfac /= 4*M_PI*eps0;
+                    for (int l=0; l < 3; l++) {
+                        res[i][j][l] += efac * expfac * rpcp[l];
+                    }
                 }
             }
         }
@@ -205,6 +220,10 @@ restype dipole_field_general(boost::multi_array<double, 3>& r,
     //    wavevector(scalar)
     // t: real
     //    time
+    // calc_H: calculate H field if true otherwise E field
+    //
+    // Returns
+    // -------
     // res: NxMx3 complex array
     //    E or H-Field
 
