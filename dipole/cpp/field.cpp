@@ -349,7 +349,7 @@ dipole_radiant_intensity_wrapper(vector<vector<double>> T,
             R_ma[i][j] = R[i][j];
 
     // main
-    ffrestype myres = dipole_radiant_intensity(T_ma, P_ma, p_ma, R_ma, phases, k);
+    auto myres = dipole_radiant_intensity(T_ma, P_ma, p_ma, R_ma, phases, k);
 
     N1 = myres.shape()[0];
     N2 = myres.shape()[1];
@@ -393,7 +393,7 @@ farfield_dipole_wrapper(vector<vector<vector<double>>> r,
             R_ma[i][j] = R[i][j];
 
     // main
-    restype myres = dipole_field_ff(r_ma, P_ma, R_ma, phases, k, t);
+    auto myres = dipole_field_ff(r_ma, P_ma, R_ma, phases, k, t);
 
     N1 = myres.shape()[0];
     N2 = myres.shape()[1];
@@ -440,7 +440,7 @@ general_dipole_wrapper(vector<vector<vector<double>>> r,
             R_ma[i][j] = R[i][j];
 
     // main
-    restype myres = dipole_field_general(r_ma, P_ma, R_ma, phases, k, t, calc_H);
+    auto myres = dipole_field_general(r_ma, P_ma, R_ma, phases, k, t, calc_H);
 
     N1 = myres.shape()[0];
     N2 = myres.shape()[1];
@@ -453,16 +453,3 @@ general_dipole_wrapper(vector<vector<vector<double>>> r,
                 myres_vec[i][j][k] = myres[i][j][k];
     return myres_vec;
 }
-
-
-// int main() {
-//     boost::multi_array<double, 3> r(boost::extents[250][250][3]);
-//     boost::multi_array<double, 2> P(boost::extents[200][3]);
-//     boost::multi_array<double, 2> R(boost::extents[200][3]);
-//     vector<double> phases(200);
-//     double k = 0.08;
-//     double t = 0.;
-//     double releps = 1.;
-//     restype myres = dipole_field_ff(r, P, R, phases, k, t, releps);
-//     return 0;
-// }
