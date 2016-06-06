@@ -101,10 +101,10 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
                         boost::multi_array<double, 2>& p,
                         boost::multi_array<double, 2>& R,
                         std::vector<double>& phases, //1d
-                        double k, double t)
+                        double k, double t, bool calc_H)
 {
-    // computes the vectorial E field of a set of oscillating dipoles in the
-    // far field
+    // computes the vectorial E or H field of a set of oscillating dipoles in the
+    // far-field region
 
     // Note: we use the following time dependence of the phasors: exp(-i*w*t)
 
@@ -120,6 +120,7 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
     //    time
     // res: NxMx3 complex array
     //    E-Field
+    // calc_H: calculate H field if true otherwise E field
 
     int N = r.shape()[0];
     int M = r.shape()[1];
@@ -366,7 +367,7 @@ farfield_dipole_wrapper(vector<vector<vector<double>>> r,
                         vector<vector<double>> P,
                         vector<vector<double>> R,
                         vector<double> phases,
-                        double k, double t) {
+                        double k, double t, bool calc_H) {
     size_t N1 = r.size();
     size_t N2 = r[0].size();
     size_t N3 = r[0][0].size();
@@ -393,7 +394,7 @@ farfield_dipole_wrapper(vector<vector<vector<double>>> r,
             R_ma[i][j] = R[i][j];
 
     // main
-    auto myres = dipole_field_ff(r_ma, P_ma, R_ma, phases, k, t);
+    auto myres = dipole_field_ff(r_ma, P_ma, R_ma, phases, k, t, calc_H);
 
     N1 = myres.shape()[0];
     N2 = myres.shape()[1];

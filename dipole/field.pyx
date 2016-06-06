@@ -24,13 +24,12 @@ cdef extern from "cpp/field.hpp":
         vector[double_t] phases,
         double_t k)
 
-    # TODO bool calc_H
     cdef vector[vector[vector[complex_t]]] farfield_dipole_wrapper(
         vector[vector[vector[double_t]]] r,
         vector[vector[double_t]] P,
         vector[vector[double_t]] R,
         vector[double_t] phases,
-        double_t k, double_t ts)
+        double_t k, double_t ts, bool calc_H)
 
     cdef vector[vector[vector[complex_t]]] general_dipole_wrapper(
         vector[vector[vector[double_t]]] r,
@@ -43,7 +42,7 @@ def dipole_e_ff(np.ndarray[double_t, ndim=3] r,
                 np.ndarray[double_t, ndim=2] P,
                 np.ndarray[double_t, ndim=2] R,
                 np.ndarray[double_t, ndim=1] phases,
-                double_t k, double_t t):
+                double_t k, double_t t, bool calc_H):
 
     cdef r0 = r.shape[0]
     cdef r1 = r.shape[1]
@@ -83,7 +82,7 @@ def dipole_e_ff(np.ndarray[double_t, ndim=3] r,
     for i in range(phases.shape[0]):
         phases_vec.push_back(phases[i])
 
-    aa = farfield_dipole_wrapper(rvec, Pvec, Rvec, phases_vec, k, t)
+    aa = farfield_dipole_wrapper(rvec, Pvec, Rvec, phases_vec, k, t, calc_H)
 
     resvec = np.empty([aa.size(), aa[0].size(), aa[0][0].size()],
                       dtype='complex128')
