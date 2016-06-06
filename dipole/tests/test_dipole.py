@@ -310,19 +310,20 @@ class TestAnalytic(Base):
 
     @pytest.mark.parametrize('parallel', [True, False])
     def test_2parallel(self, parallel):
-        """ 2 parallel dipoles
+        """ 2 parallel or antiparallel dipoles
         """
         ngrid = 256
         k = 1.
         La = 2*np.pi/k
         ndip = 2
-
-        T, P, r = gen_r(ngrid, onsphere=True, reval=500., thetamax=90.)
+        reval = 1e6*La
+        T, P, r = gen_r(ngrid, onsphere=True, reval=reval, thetamax=90.)
 
         pdisk = np.zeros((ndip, 3))
-        pdisk[:, 2] = 1.
+        alignax = 2  # z
+        pdisk[:, alignax] = 1.
         if not parallel:
-            pdisk[1, 2] = -1.
+            pdisk[1, alignax] = -1.
 
         rdip = np.zeros((2, 3))
         rdip[1, 0] = La/2
@@ -336,6 +337,10 @@ class TestAnalytic(Base):
         self._plot_intens(T, P, res)
         self._plot_poynting(T, P, S=np.linalg.norm(Smean, axis=2),
                             title='poynting')
+
+        rint = dipole_radiant_intensity(T, P, pdisk, rdip, phases, k)
+        self._plot_poynting(T, P, S=rint,
+                            title='rint')
         self.show()
 
     def test_2antiparallel(self):
