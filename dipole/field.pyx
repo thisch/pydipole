@@ -38,7 +38,8 @@ cdef extern from "cpp/field.hpp":
         vector[double_t] phases,
         double_t k, double_t ts, bool calc_H)
 
-def dipole_e_ff(np.ndarray[double_t, ndim=3] r,
+
+def _dipole_ff(np.ndarray[double_t, ndim=3] r,
                 np.ndarray[double_t, ndim=2] P,
                 np.ndarray[double_t, ndim=2] R,
                 np.ndarray[double_t, ndim=1] phases,
@@ -93,6 +94,22 @@ def dipole_e_ff(np.ndarray[double_t, ndim=3] r,
                 # print("aa[%d, %d, %d] = %s " % (i, j, kidx, aa[i][j][kidx]))
                 resvec[i, j, kidx] = aa[i][j][kidx]
     return resvec
+
+
+def dipole_e_ff(np.ndarray[double_t, ndim=3] r,
+                np.ndarray[double_t, ndim=2] P,
+                np.ndarray[double_t, ndim=2] R,
+                np.ndarray[double_t, ndim=1] phases,
+                double_t k, double_t t):
+    return _dipole_ff(r, P, R, phases, k, t, False)
+
+
+def dipole_h_ff(np.ndarray[double_t, ndim=3] r,
+                np.ndarray[double_t, ndim=2] P,
+                np.ndarray[double_t, ndim=2] R,
+                np.ndarray[double_t, ndim=1] phases,
+                double_t k, double_t t):
+    return _dipole_ff(r, P, R, phases, k, t, True)
 
 
 def dipole_radiant_intensity(

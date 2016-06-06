@@ -52,13 +52,22 @@ def dipole_general(np.ndarray[double_t, ndim=3] r, # observation points
                    double_t t=0):
     ...
 
+# computes E field in the far-field region
 def dipole_e_ff(np.ndarray[double_t, ndim=3] r,
                 np.ndarray[double_t, ndim=2] P,
                 np.ndarray[double_t, ndim=2] R,
                 np.ndarray[double_t, ndim=1] phases,
                 double_t k, double_t t=0):
     ...
-    
+
+# computes H field in the far-field region
+def dipole_h_ff(np.ndarray[double_t, ndim=3] r,
+                np.ndarray[double_t, ndim=2] P,
+                np.ndarray[double_t, ndim=2] R,
+                np.ndarray[double_t, ndim=1] phases,
+                double_t k, double_t t=0):
+    ...
+
 ```
 
 ## References
