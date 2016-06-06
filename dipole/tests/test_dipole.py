@@ -15,18 +15,13 @@ LG = logging.getLogger('dip')
 
 
 def main(test, ndip, k=0.08, ngrid=100, thetamax=45.,
-         rdisk=None, aligned_dipoles=False, align_axis='z', onsphere=True,
-         s=None, plot=True):
+         rdisk=1., aligned_dipoles=False, align_axis='z', onsphere=True,
+         intens=False, s=None, plot=True):
     Lam = 2*np.pi/k
     reval = 1000*Lam
-    reval2 = 5.*Lam
     LG.info('#### SETTINGS: #dips=%d, k=%g, reval=%g', ndip, k, reval)
 
     rparams = gen_r(ngrid, reval=reval, onsphere=onsphere, thetamax=thetamax)
-    if rdisk:
-        rparams2 = gen_r(ngrid, reval=reval2, onsphere=False,
-                         rmax=rdisk*1.2)
-
     if s is not None:
         rand = s.rand
     else:
@@ -55,20 +50,14 @@ def main(test, ndip, k=0.08, ngrid=100, thetamax=45.,
         phases = rand(ndip) * 2*np.pi
 
         # ax.plot(rdip[:, 0], rdip[:, 1], 'x', label='k=%g' % kcur)
-    if onsphere:
-        intens = dipole_radiant_intensity(rparams[0],
-                                          rparams[1],
-                                          pdisk, rdip, phases, k)
-    else:
-        intens = np.linalg.norm(
-            dipole_e_ff(rparams[-1], pdisk, rdip, phases, k, t=0),
-            axis=2)**2
 
-    if rdisk is not None:
-        tot2, _ = dipole_general(rparams2[-1], pdisk, rdip,
-                                 phases, k, t=0)
-        return reval, rparams + (tot,), reval2, rparams2 + (tot2,)
-    return reval, rparams + (tot,)
+    if intens:
+        intens = dipole_radiant_intensity(rparams[0], rparams[1], pdisk,
+                                          rdip, phases, k)
+        return reval, rparams + (intens,)
+    else:
+        field = dipole_e_ff(rparams[-1], pdisk, rdip, phases, k, t=0)
+        return reval, rparams + (field,)
 
 
 class TestAnalytic(Base):
@@ -89,6 +78,7 @@ class TestAnalytic(Base):
         for align in 'xyz':
             reval, iparams = main(self, ndip=1, aligned_dipoles=True,
                                   thetamax=thetamax, align_axis=align,
+                                  intens=True,
                                   onsphere=onsphere, k=k, ngrid=200)
             if onsphere:
                 T, P, _, intens = iparams
@@ -100,7 +90,7 @@ class TestAnalytic(Base):
             ax.set_title('k=%g, dipole orientation: %s-axis' % (k, align))
         self.show()
 
-    def _polarization_main(self, ndip, onsphere=False, k=1., rdisk=None, s=None,
+    def _polarization_main(self, ndip, onsphere=False, k=1., rdisk=1., s=None,
                            alignments=None):
         if not onsphere:
             thetamax = 14
@@ -110,12 +100,9 @@ class TestAnalytic(Base):
             alignments = 'xyz'
         for align in alignments:
             ret = main(self, ndip=ndip, aligned_dipoles=True,
-                       rdisk=rdisk, thetamax=thetamax, align_axis=align, s=s,
+                       thetamax=thetamax, align_axis=align, s=s, rdisk=rdisk,
                        onsphere=onsphere, k=k, ngrid=32)
-            if rdisk is None:
-                reval, fparams = ret
-            else:
-                reval, fparams, reval2, fparams2 = ret
+            reval, fparams = ret
 
             if onsphere:
                 T, P, _, field = fparams
@@ -158,14 +145,6 @@ class TestAnalytic(Base):
             Is /= Is.max()
             fig, ax = plt.subplots()
             ax.plot(polangles, Is, '-', label='pol farfield')
-
-            if rdisk is not None:
-                field = fparams2[-1]
-                Ex, Ey = field[:, :, 0], field[:, :, 1]
-                Is = np.array([(abs(np.cos(phi)*Ex +
-                                    np.sin(phi)*Ey)**2).sum() for phi in phis])
-                Is /= Is.max()
-                ax.plot(polangles, Is, '-', label='pol nearfield')
             ax.legend(fontsize=8)
 
     def test_single_dp_pol(self):
