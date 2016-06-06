@@ -25,10 +25,24 @@ are given by
 ![](https://github.com/thisch/pydipole/raw/master/doc/equations-3.png)
 ![](https://github.com/thisch/pydipole/raw/master/doc/equations-4.png)
 
+``dipole.field.dipole_radiant_intensity`` computes the average power
+radiated and is given by ([radiant intensity](https://en.wikipedia.org/wiki/Radiant_intensity))
+
+![](https://github.com/thisch/pydipole/raw/master/doc/equations-5.png)
+
 See the examples in `examples/\*.py` and the unit tests in `dipole/tests/\*.py` for examples on how to use the mentioned functions.
 
 ##API
 ```
+def dipole_radiant_intensity(
+        np.ndarray[double_t, ndim=2] T,  # theta coords (observation points)
+        np.ndarray[double_t, ndim=2] P,  # phi coords (observation points)
+        np.ndarray[double_t, ndim=2] p,  # dipole moments
+        np.ndarray[double_t, ndim=2] r,  # dipole positions
+        np.ndarray[double_t, ndim=1] phases,
+        double_t k):
+    ...
+
 def dipole_general(np.ndarray[double_t, ndim=3] r, # observation points
                    np.ndarray[double_t, ndim=2] P, # dipole moments
                    np.ndarray[double_t, ndim=2] R, # dipole positions
