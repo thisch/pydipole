@@ -3,29 +3,40 @@
 Electric dipole radiation in near and far field
 ===============================================
 
-The electric and the magnetic field of a single radiating dipole in vacuum centered at the origin (r=0) are given by
+The electric and the magnetic field of a set of non-interacting radiating
+electric dipoles in vacuum are given by
 
-![](https://upload.wikimedia.org/math/7/b/4/7b487096b3b9661fd46a5768a8a36407.png)
-![](https://upload.wikimedia.org/math/0/5/4/054a31e26998ea459e680f2788fbf692.png)
+![](https://github.com/thisch/pydipole/raw/master/doc/equations-0.png)
+![](https://github.com/thisch/pydipole/raw/master/doc/equations-2.png)
+
+where `p\_n` are the dipole moments and `varphi\_n` are the temporal phases of
+the oscillating dipoles. The quantities `r'` and `rvechat'` depend on the
+positions of the dipoles `a\_n`,
+
+![](https://github.com/thisch/pydipole/raw/master/doc/equations-1.png)
+
 
 The function ``dipole.field.dipole_general`` evaluates the electric and/or
 magnetic field of a set of oscillating dipoles at specified observation
-points. If only the far field is of interest, the optimized function ``dipole.field.dipole_e_ff`` can be used.
-In the far field limit the fields are given by 
+points. If only the far field is of interest, the optimized function
+``dipole.field.dipole_e_ff`` can be used.  In the far field limit the fields
+are given by
 
-![](https://upload.wikimedia.org/math/1/b/a/1ba94136987feca2fdd4067a9a3cd20f.png)
-![](https://upload.wikimedia.org/math/0/6/d/06d634484563b8c4c576ee1cca59fb46.png)
+![](https://github.com/thisch/pydipole/raw/master/doc/equations-3.png)
+![](https://github.com/thisch/pydipole/raw/master/doc/equations-4.png)
 
-See the unit tests in ``dipole/tests/*.py`` for examples on how to use the mentioned functions.
+See the examples in `examples/\*.py` and the unit tests in `dipole/tests/\*.py` for examples on how to use the mentioned functions.
 
 ##API
 ```
-def dipole_general(np.ndarray[double_t, ndim=3] r,
-                   np.ndarray[double_t, ndim=2] P,
-                   np.ndarray[double_t, ndim=2] R,
+def dipole_general(np.ndarray[double_t, ndim=3] r, # observation points
+                   np.ndarray[double_t, ndim=2] P, # dipole moments
+                   np.ndarray[double_t, ndim=2] R, # dipole positions
                    np.ndarray[double_t, ndim=1] phases,
-                   double_t k, bool poyntingmean=False,
-                   bool poyntingstatic=False, double_t t=0):
+                   double_t k, # wave number
+                   bool poyntingmean=False, # TODO deprecate this kwarg
+                   bool poyntingstatic=False, # TODO deprecate this kwarg
+                   double_t t=0):
     ...
 
 def dipole_e_ff(np.ndarray[double_t, ndim=3] r,
