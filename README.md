@@ -32,7 +32,7 @@ radiated and is given by ([radiant intensity](https://en.wikipedia.org/wiki/Radi
 
 See the examples in `examples/\*.py` and the unit tests in `dipole/tests/\*.py` for examples on how to use the mentioned functions.
 
-##API
+## API
 ```
 def dipole_radiant_intensity(
         np.ndarray[double_t, ndim=2] T,  # theta coords (observation points)
@@ -61,18 +61,23 @@ def dipole_e_ff(np.ndarray[double_t, ndim=3] r,
     ...
     
 ```
-##Requirements
+
+## References
+
+[Notes by Alpar Sevgen](www.phys.boun.edu.tr/~sevgena/p202/docs/Electric%20dipole%20radiation.pdf)
+
+## Requirements
 * Python 3
 * Numpy
 * Cython
 * Matplotlib
 * py.test 
 
-##Compilation
+## Compilation
 
     python setup.py build_ext -i
 
-##Run unit tests
+## Run unit tests
 
 ```
 py.test
