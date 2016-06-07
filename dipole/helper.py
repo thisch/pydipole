@@ -35,6 +35,8 @@ def unit_vectors(thetamax=7.5, ngrid=32):
 
 
 def gen_r(ngrid, reval, onsphere, thetamax=None, rmax=None, xslice=False):
+    # TODO return tx and ty if onsphere=False
+
     nfirst = 1 if xslice else ngrid
     r = np.empty((nfirst, ngrid, 3))
     if onsphere:

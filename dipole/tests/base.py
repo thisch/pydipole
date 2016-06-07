@@ -14,6 +14,14 @@ class Base:
         # TODO support for fixtures (convert fixtures to strs)
         self._testMethodName = method.__name__
 
+    def _plot_linpol(self, T, P, field, fixvminmax=True, ax=None):
+        from dipole.plots import plot_linpol
+        plot_linpol(T, P, field, fixvminmax=fixvminmax, ax=ax)
+
+    def _plot_linpol_plane(self, X, Y, field, fixvminmax=True, ax=None):
+        from dipole.plots import plot_linpol_plane
+        plot_linpol_plane(X, Y, field=field, fixvminmax=fixvminmax, ax=ax)
+
     def _plot_surface(self, T, P, intens, ax=None):
         if ax is None:
             from mpl_toolkits.mplot3d import Axes3D
@@ -47,6 +55,30 @@ class Base:
         ax.set_aspect('equal')
         if title:
             ax.set_title(title)
+        # ax.set_xlim(-25,25)
+        # ax.set_ylim(-25,25)
+
+        # cax.set_xticks([])
+        # cax.set_yticks([])
+        # cax.set_title('R_disk=%g lambda=%g, ndipoles=%d' % (scalefac, 2*np.pi/k,
+                                                            # ndipoles))
+        return ax
+
+    def _plot_quiver_exy(self, field=None, title=None, XY=None, ax=None):
+        Ex = field[:, :, 0].real
+        Ey = field[:, :, 1].real
+
+        if ax is None:
+            fig, ax = plt.subplots()
+
+        # ax.imshow(intens)
+        if XY is not None:
+            ax.quiver(XY[0], XY[1], Ex.real, Ey.real)
+        ax.set_aspect('equal')
+        if title:
+            ax.set_title(title)
+        ax.set_xlabel('X (plane)')
+        ax.set_ylabel('Y (plane)')
         # ax.set_xlim(-25,25)
         # ax.set_ylim(-25,25)
 
