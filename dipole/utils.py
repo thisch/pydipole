@@ -62,7 +62,12 @@ class GaussianBeam:
         return np.arctan(z/self.zr)
 
     def eval(self, z, r):
-        scalval = 1/self.q(z)*np.exp(-1j*self.k*r**2/(2*self.q(z)))
+        scalval = 1/self.q(z)*np.exp(-0.5j*self.k*r**2/self.q(z))
+
+        # scalval = 1/self.q(z)*np.exp(-1j*self.k*r**2/(2*self.q(z)))
+        # scalval = 1/self.q(z)*np.exp(0.5*self.k*r**2*self.qinv(z).imag)
+        # scalval = 1/self.q(z)*np.exp(-0.5j*self.k*r**2*self.qinv(z).real)
+        # scalval = 1/self.q(z)*np.exp(-0.5j*self.k**self.qinv(z).real)
         return self.add_polarization(scalval, z, r)
 
     def eval_vec(self, rvec):
@@ -79,9 +84,9 @@ class GaussianBeam:
             pre = [1., 1j, 0]
         elif self.pol == 'RHCP':
             pre = [1., -1j, 0]
-        elif self.pol == 'x':
+        elif self.pol == 'X':
             pre = [1., 0, 0]
-        elif self.pol == 'y':
+        elif self.pol == 'Y':
             pre = [0, 1, 0]
         else:
             raise ValueError('invalid polarization value %s' % self.pol)
