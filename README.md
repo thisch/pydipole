@@ -72,7 +72,7 @@ def dipole_h_ff(np.ndarray[double_t, ndim=3] r,
 
 ## References
 
-[Notes by Alpar Sevgen](www.phys.boun.edu.tr/~sevgena/p202/docs/Electric%20dipole%20radiation.pdf)
+[Notes by Alpar Sevgen](http://www.phys.boun.edu.tr/~sevgena/p202/docs/Electric%20dipole%20radiation.pdf)
 
 ## Requirements
 * Python 3

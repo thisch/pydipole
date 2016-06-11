@@ -24,7 +24,7 @@ r' := |\mathbf{r} - \mathbf{a}_{n}|\quad\mathbf{\hat{r}'} := \frac{\mathbf{r} - 
 
 % magnetic field
 \begin{mymath}
-\mathbf{H}(\mathbf{r}, t) = \sum_{n=1}^{N}\frac{1}{4\pi c r'} (\mathbf{\hat{r}'} \times \mathbf{p}_{n}) \left (1 - \frac{1}{ikr'}\right) e^{ikr' - i(\omega t + \varphi_{n})}
+\mathbf{H}(\mathbf{r}, t) = \sum_{n=1}^{N}\frac{ck^2}{4\pi r'} (\mathbf{\hat{r}'} \times \mathbf{p}_{n}) \left (1 - \frac{1}{ikr'}\right) e^{ikr' - i(\omega t + \varphi_{n})}
 \end{mymath}
 
 
@@ -35,7 +35,7 @@ r' := |\mathbf{r} - \mathbf{a}_{n}|\quad\mathbf{\hat{r}'} := \frac{\mathbf{r} - 
 
 % magnetic field (far-field)
 \begin{mymath}
-\mathbf{H}_\infty(\mathbf{r}, t) = \sum_{n=1}^{N}\frac{1}{4\pi c r} (\mathbf{\hat{r}} \times \mathbf{p}_{n}) e^{ik(r - \mathbf{\hat{r}}\cdot\mathbf{a}_n) - i(\omega t + \varphi_{n})}
+\mathbf{H}_\infty(\mathbf{r}, t) = \sum_{n=1}^{N}\frac{ck^2}{4\pi r} (\mathbf{\hat{r}} \times \mathbf{p}_{n}) e^{ik(r - \mathbf{\hat{r}}\cdot\mathbf{a}_n) - i(\omega t + \varphi_{n})}
 \end{mymath}
 
 

@@ -162,7 +162,7 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
 
                 const double krinp = k*rinp/magr;
                 auto expfac = exp(complex<double>(0, (k*magr - krinp) - phases[d]));
-
+                auto efac = k*k/magr;
                 if (calc_H) {
                     // TODO this code is not tested
                     vector<double> r_cross_p(3);
@@ -170,13 +170,12 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
                     r_cross_p[0] = r_vec[1]*p_vec[2] - r_vec[2]*p_vec[1];
                     r_cross_p[1] = -r_vec[0]*p_vec[2] + r_vec[2]*p_vec[0];
                     r_cross_p[2] = r_vec[0]*p_vec[1] - r_vec[1]*p_vec[0];
-                    expfac /= 4*M_PI*c*magr;
+                    expfac *= c/(4*M_PI);
                     for (int l=0; l < 3; l++) {
-                        res[i][j][l] += expfac * r_cross_p[l];
+                        res[i][j][l] += efac * expfac * r_cross_p[l];
                     }
                 }
                 else {
-                    auto efac = k*k/magr;
                     vector<double> r_cross_p(3);
                     vector<double> rpcp(3);
 

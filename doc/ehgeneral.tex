@@ -1,0 +1,21 @@
+\documentclass[preview]{standalone}
+% \documentclass[multi={mymath},border=1pt,convert={density=300,outext=.png}]{standalone}
+\usepackage{amsmath, environ}
+\usepackage{xcolor}
+\begin{document}
+
+\pagecolor[RGB]{255,255,255} % white
+
+\begin{eqnarray*}
+  \mathbf{E}(\mathbf{r}, t) & = &
+                                  \sum_{n=1}^{N}\frac{1}{4\pi\epsilon_{0}} \Big\{\frac{k^{2}}{{r}'}(\mathbf{\hat{r}'} \times \mathbf{p}_{n}) \times \mathbf{\hat{r}'} +\\
+                            && \frac{1}{{r'}^{3}}(1-ikr') \left[ 3\mathbf{\hat{r}'}(\mathbf{\hat{r}'} \cdot \mathbf{p}_{n}) - \mathbf{p}_{n}\right] \Big\}\,e^{ikr' - i(\omega t + \varphi_{n})} \\
+  \mathbf{H}(\mathbf{r}, t) & = & \sum_{n=1}^{N}\frac{ck^{2}}{4\pi r'} (\mathbf{\hat{r}'} \times \mathbf{p}_{n}) \left (1 - \frac{1}{ikr'}\right) e^{ikr' - i(\omega t + \varphi_{n})} \\
+\end{eqnarray*}
+
+\end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% compile-command: "pdflatex -shell-escape ehgeneral.tex"
+%%% End:
