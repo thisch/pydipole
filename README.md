@@ -73,7 +73,9 @@ def dipole_h_ff(np.ndarray[double_t, ndim=3] r,
 ## References
 
 [Notes by Alpar Sevgen](http://www.phys.boun.edu.tr/~sevgena/p202/docs/Electric%20dipole%20radiation.pdf)
+
 [Electric Dipole Radiation (1)](https://en.wikipedia.org/wiki/Multipole_radiation#Electric_dipole_radiation)
+
 [Electric Dipole Radiation (2)](https://en.wikipedia.org/wiki/Dipole#Dipole_radiation)
 
 ## Requirements
