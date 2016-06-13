@@ -59,7 +59,6 @@ ffrestype dipole_radiant_intensity(boost::multi_array<double, 2>& T,
                 sin(T[i][j])*sin(P[i][j]),
                 cos(T[i][j])};
 
-            // TODO sum over dipoles
             // p tot
             vector<complex<double>> p_vec(3, 0);
             for (int d=0; d < L; ++d) {
@@ -74,17 +73,10 @@ ffrestype dipole_radiant_intensity(boost::multi_array<double, 2>& T,
             }
 
             // r x p
-            const vector<complex<double>> r_cross_p = {
+            const vector<complex<double>> tmpres = {
                 r[1]*p_vec[2] - r[2]*p_vec[1],
                 -r[0]*p_vec[2] + r[2]*p_vec[0],
                 r[0]*p_vec[1] - r[1]*p_vec[0]
-            };
-
-            // (r x p) x r
-            const vector<complex<double>> tmpres = {
-                r_cross_p[1]*r[2] - r_cross_p[2]*r[1],
-                -r_cross_p[0]*r[2] + r_cross_p[2]*r[0],
-                r_cross_p[0]*r[1] - r_cross_p[1]*r[0]
             };
 
             complex<double> rint = 0.;
