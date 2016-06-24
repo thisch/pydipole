@@ -110,9 +110,12 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
     //    wavevector(scalar)
     // t: real
     //    time
+    // calc_H: calculate H field if true otherwise E field
+    //
+    // Returns
+    // -------
     // res: NxMx3 complex array
     //    E-Field
-    // calc_H: calculate H field if true otherwise E field
 
     int N = r.shape()[0];
     int M = r.shape()[1];
@@ -130,28 +133,26 @@ restype dipole_field_ff(boost::multi_array<double, 3>& r,
 
         for (int j=0; j < M; j++) {
             // cout << "i " << i << " j " << j << endl;
+            double magr = 0.;
+            vector<double> r_vec(3);
             for (int l=0; l < 3; l++) {
                 res[i][j][l] = 0.;
+                r_vec[l] = r[i][j][l];
+                magr += r[i][j][l]*r[i][j][l];
             }
+            magr = sqrt(magr);
+            for (int g=0; g < 3; ++g) {
+                r_vec[g] /= magr;
+            }
+
             // cout << (r[i][j] - R[0]) << endl;
             for (int d=0; d < L; ++d) {
-                double magr = 0.;
-                vector<double> r_vec(3);
                 vector<double> p_vec(3);
-
-                // TODO move magr part one level up
                 double rinp = 0.;
                 for (int g=0; g < 3; ++g) {
                     p_vec[g] = p[d][g];
                     rinp += r[i][j][g]*R[d][g];
-                    r_vec[g] = r[i][j][g];
-                    magr += r[i][j][g]*r[i][j][g];
                 }
-                magr = sqrt(magr);
-                for (int g=0; g < 3; ++g) {
-                    r_vec[g] /= magr;
-                }
-
                 const double krinp = k*rinp/magr;
                 auto expfac = exp(complex<double>(0, (k*magr - krinp) - phases[d]));
                 auto efac = k*k/magr;
