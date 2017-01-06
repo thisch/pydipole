@@ -31,6 +31,8 @@ cdef extern from "cpp/field.hpp":
         vector[double_t] phases,
         double_t k, double_t ts, bool calc_H)
 
+    # TODO nearfield_dipole_wrapper
+
     cdef vector[vector[vector[complex_t]]] general_dipole_wrapper(
         vector[vector[vector[double_t]]] r,
         vector[vector[double_t]] P,
