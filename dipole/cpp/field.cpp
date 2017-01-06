@@ -330,18 +330,15 @@ dipole_radiant_intensity_wrapper(vector<vector<double>> T,
     size_t N1 = T.size();
     size_t N2 = T[0].size();
 
-    // THETA
+    // THETA, PHI
     auto T_ma = boost::multi_array<double, 2>(boost::extents[N1][N2]);
-    for (size_t i=0; i<N1; ++i)
-        for (size_t j=0; j<N2; ++j)
-            T_ma[i][j] = T[i][j];
-
-    // PHI
     auto P_ma = boost::multi_array<double, 2>(boost::extents[N1][N2]);
-    for (size_t i=0; i<N1; ++i)
-        for (size_t j=0; j<N2; ++j)
+    for (size_t i=0; i<N1; ++i) {
+        for (size_t j=0; j<N2; ++j) {
+            T_ma[i][j] = T[i][j];
             P_ma[i][j] = P[i][j];
-
+        }
+    }
     // dipole moments
     N1 = p.size(); //
     N2 = p[0].size();
