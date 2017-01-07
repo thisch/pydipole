@@ -92,8 +92,8 @@ def dipole_h_ff(np.ndarray[double_t, ndim=3] r,
 ## Run unit tests
 
 ```
-py.test
-py.test --interactive  # unskip interactive tests (matplotlib plots are shown)
-py.test --nocapturelog -s  # shows the log output
-py.test 'dipole/tests/test_ring.py::TestRing::test_rolf_pishift[True]' --interactive  # run a single test
+pytest
+pytest --interactive  # unskip interactive tests (matplotlib plots are shown)
+pytest --nocapturelog -s  # shows the log output
+pytest 'dipole/tests/test_ring.py::TestRing::test_rolf_pishift[True]' --interactive  # run a single test
 ```
