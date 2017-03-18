@@ -74,7 +74,7 @@ class TestAnalytic(Base):
         """
         single dipole
         """
-        ngrid = 200 if not surface else 400.
+        ngrid = 200 if not surface else 400
         if onsphere:
             thetamax = 180. if surface else 90.
         else:
