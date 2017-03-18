@@ -33,8 +33,7 @@ class TestRing(Base, FFTMixin):
             r[0, :, 2] = z0 * np.cos(tlsp)
         elif sphere:
             postfix = '_on_sphere'
-            P, T, (e_r, e_t, e_p) = unit_vectors(thetamax=thetamax,
-                                                 ngrid=ngrid)
+            P, T, (e_r, _, _) = unit_vectors(thetamax=thetamax, ngrid=ngrid)
             for i in range(3):
                 r[:, :, i] = z0 * e_r[i, :, :]
         else:
@@ -50,8 +49,7 @@ class TestRing(Base, FFTMixin):
 
         res = np.empty(r.shape, dtype='complex128')
 
-        dipole_phis, dphi = np.linspace(0, 2*np.pi, ndip,
-                                        retstep=True, endpoint=False)
+        dipole_phis = np.linspace(0, 2*np.pi, ndip, endpoint=False)
         ind = (dipole_phis > np.pi/2) & (dipole_phis < 3*np.pi/2)
         # dipole_phis[ind] += dphi/2.
 
